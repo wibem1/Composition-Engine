@@ -3,7 +3,7 @@
 Gemeinsames appübergreifendes Kompositionsmodul für die Klangwerke-Kompositionswerkzeuge.
 
 ## Aktuelle Version
-**Composition Engine v1.1.0**
+**Composition Engine v1.1.2**
 
 Dieser Stand ist die verbindliche Quelle der Engine, die in Minimal Composer und MusicChat lokal eingebettet wird. Native Apps und DAW-Werkzeuge sollen dieselbe freigegebene Engine-Version lokal übernehmen bzw. an ihre Laufzeitumgebung adaptieren. Es entsteht dadurch keine zusätzliche Web-Abhängigkeit.
 
