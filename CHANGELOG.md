@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.0 – 2026-09-20
+- Einheitliches appübergreifendes Kompositionsprofil in der Engine.
+- Standard: BPM, musikalische Tempoangabe, Tonart, Taktanzahl, KI/Modell und knappe musikalische Beschreibung.
+- BPM und Taktanzahl werden aus der fertigen Partitur bestimmt; Provider/Modell stammen aus dem Lauf.
+- Tonart und Tempoangabe werden aus vorhandenen Partiturfeldern oder dem musikalischen Entwurf übernommen.
+- Apps sollen dieses Engine-Profil anzeigen und keine eigene Beschreibungskonvention pflegen.
+- Die technische Partitur bleibt vom Beschreibungsaufruf ausgeschlossen.
+
 ## 1.0.1 – 2026-09-20
 - Kosten-/Datenflusskorrektur: `composition_idea_afterwards` erhält nicht mehr die vollständige technische Partitur.
 - Die Kompositionsbeschreibung basiert weiterhin auf ursprünglichem Auftrag und vollständigem musikalischem Entwurf.
