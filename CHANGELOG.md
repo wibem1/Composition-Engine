@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.2 – 2026-09-20
+- Fehlerkorrektur: Das in v1.1.0 definierte Kompositionsprofil wird nach der Kompositionsbeschreibung nun tatsächlich mit `compositionProfile(...)` erzeugt und als `run.profile` gespeichert.
+- Diagnose protokolliert `composition_profile_created` mit BPM, Tempoangabe, Tonart, Taktanzahl und Provider/Modell.
+- Keine Änderung an musikalischem Entwurf, MIDI-Übersetzung oder MIDI-Erzeugung.
+
 ## 1.1.0 – 2026-09-20
 - Einheitliches appübergreifendes Kompositionsprofil in der Engine.
 - Standard: BPM, musikalische Tempoangabe, Tonart, Taktanzahl, KI/Modell und knappe musikalische Beschreibung.
