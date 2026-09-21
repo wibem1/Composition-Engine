@@ -26,3 +26,9 @@ SemVer: MAJOR.MINOR.PATCH.
 - MAJOR: inkompatible Schnittstellen-/Architekturänderung
 - MINOR: neue kompatible Engine-Funktion
 - PATCH: kompatible Fehlerkorrektur ohne beabsichtigte musikalische Verhaltensänderung
+
+
+## Experiment v1.2.0 – Sound-first / „Bauch → Kopf → Hand“
+Der Branch `experimental-v1.2.0-sound-first` verändert bewusst nur die kreative erste Stufe. Der musikalische Entwurf beginnt mit einer vorgestellten klingenden Gestalt (Klangraum, Bewegung, Spannung, Gestik, Dichte, Atem, zeitlicher Verlauf), bevor diese konkret ausnotiert wird. Eigenwillige oder asymmetrische Lösungen sollen nicht vorsorglich regularisiert werden.
+
+`midi_translation`, technischer Vertrag und lokale MIDI-Erzeugung bleiben gegenüber v1.1.2 unverändert. Ziel ist ein direkter Hörvergleich mit identischen Kompositionsaufträgen; zusätzliche KI-Kontroll- oder Reparaturstufen werden zunächst nicht eingeführt.
