@@ -1,7 +1,7 @@
 (()=>{'use strict';
 
 const ENGINE_NAME='Composition Engine';
-const ENGINE_VERSION='1.2.0-experimental.1';
+const ENGINE_VERSION='1.2.0-experimental.2';
 
 const TECHNICAL_CONTRACT=`TECHNISCHE AUSGABEANFORDERUNG – KEINE MUSIKALISCHEN ZUSATZREGELN:\nAntworte ausschließlich mit validem JSON, ohne Markdown und ohne Text außerhalb des JSON.\nDie Partitur steht entweder direkt im Wurzelobjekt oder im Feld "score".\nPartiturformat:\n{\n  "title": "optional",\n  "bpm": Zahl,\n  "timeSignature": [Zaehler, Nenner],\n  "tracks": [\n    {\n      "name": "Instrument",\n      "program": 0-127,\n      "channel": 0-15,\n      "notes": [[StartBeat, DauerInBeats, MIDIPitch, Velocity], ...]\n    }\n  ]\n}\nWeitere Textfelder, die der Benutzer in seinem Auftrag ausdrücklich verlangt, dürfen zusätzlich im JSON stehen.\nStartBeat und DauerInBeats dürfen Dezimalzahlen sein. MIDI-Pitch 0-127, Velocity 1-127.\nDas technische Format macht keinerlei Vorgaben zu Stil, Harmonik, Melodik, Rhythmik, Form, Artikulation oder musikalischer Qualität.`;
 function createPrompts(snapshot,draft='',translated=''){
@@ -18,6 +18,14 @@ function extractText(p,j){if(p==='openai'){if(typeof j.output_text==='string')re
 function extractJson(text){let s=String(text||'').trim().replace(/^\`\`\`(?:json)?\s*/i,'').replace(/\s*\`\`\`$/,'').trim();try{return JSON.parse(s)}catch(_){const a=s.indexOf('{'),b=s.lastIndexOf('}');if(a>=0&&b>a)return JSON.parse(s.slice(a,b+1));throw _}}
 function findScore(o){const s=o&&o.score&&Array.isArray(o.score.tracks)?o.score:o;if(!s||!Array.isArray(s.tracks)||!Number.isFinite(Number(s.bpm)))throw new Error('Kein gültiges Partitur-Objekt mit bpm und tracks gefunden.');return s}
 function findIdea(o){if(!o||typeof o!=='object')return'';for(const k of['idea','kompositionsidee','description','beschreibung','concept'])if(typeof o[k]==='string'&&o[k].trim())return o[k].trim();return''}
+function validateTechnicalScore(score){
+ const errors=[];if(!Array.isArray(score?.tracks)||!score.tracks.length)errors.push('Keine Tracks vorhanden.');
+ const ts=Array.isArray(score?.timeSignature)?score.timeSignature:[4,4],beats=(Number(ts[0])||4)*(4/(Number(ts[1])||4));
+ for(const [ti,tr] of(score?.tracks||[]).entries()){if(!Array.isArray(tr.notes))errors.push('Track '+(ti+1)+': notes fehlt.');else for(const [ni,n] of tr.notes.entries()){const tag='Track '+(ti+1)+', Note '+(ni+1)+': ';if(!Array.isArray(n)||n.length<4){errors.push(tag+'ungültiges Notenformat.');continue}const [st,du,pi,ve]=n.map(Number);if(!Number.isFinite(st)||st<0)errors.push(tag+'ungültiger StartBeat.');if(!Number.isFinite(du)||du<=0)errors.push(tag+'Dauer muss > 0 sein.');if(!Number.isInteger(pi)||pi<0||pi>127)errors.push(tag+'MIDIPitch außerhalb 0-127.');if(!Number.isInteger(ve)||ve<1||ve>127)errors.push(tag+'Velocity außerhalb 1-127.')}} 
+ const end=Math.max(0,...((score?.tracks||[]).flatMap(tr=>(tr.notes||[]).map(n=>Array.isArray(n)?Number(n[0])+Number(n[1]):0)).filter(Number.isFinite)));
+ if(!(end>0))errors.push('Partitur enthält keine positive zeitliche Ausdehnung.');
+ return{ok:errors.length===0,errors,beatsPerBar:beats,endBeat:end,barCount:end>0?Math.ceil(end/Math.max(.25,beats)):0}
+}
 async function sha256Text(text){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
 async function sha256Buffer(buf){const b=await crypto.subtle.digest('SHA-256',buf);return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
 function vlq(n){n=Math.max(0,Math.round(n));let b=[n&127];while((n>>=7))b.unshift((n&127)|128);return b}const strBytes=s=>[...new TextEncoder().encode(s)],u32=n=>[(n>>>24)&255,(n>>>16)&255,(n>>>8)&255,n&255],u16=n=>[(n>>>8)&255,n&255],chunk=(t,d)=>[...strBytes(t),...u32(d.length),...d];
@@ -33,12 +41,12 @@ async function compose({snapshot,key,repeatOf=null,seriesId=null,runId,now,reque
  ev('run_started',{note:'Keine frühere Unterhaltung oder Komposition wird an das Modell übertragen.'});
  const call=async(prompt,stage)=>requestModel({snapshot,key,promptText:prompt,stage,run,event:ev});
  const draft=await call(createPrompts(snapshot).musicalDraft,'musical_draft');if(!draft.trim())throw new Error('Der musikalische Entwurf ist leer.');run.musicalDraft=draft;
- const translated=await call(createPrompts(snapshot,draft).midiTranslation,'midi_translation');const obj=extractJson(translated);run.parsedModelJson=obj;ev('model_json_parsed',{stage:'midi_translation',changed:false,note:'Nur JSON geparst; keine musikalische Korrektur.'});const score=findScore(obj);run.score=score;
+ const translated=await call(createPrompts(snapshot,draft).midiTranslation,'midi_translation');const obj=extractJson(translated);run.parsedModelJson=obj;ev('model_json_parsed',{stage:'midi_translation',changed:false,note:'Nur JSON geparst; keine musikalische Korrektur.'});const score=findScore(obj),integrity=validateTechnicalScore(score);run.technicalIntegrity=integrity;ev('technical_integrity_checked',{ok:integrity.ok,barCount:integrity.barCount,endBeat:integrity.endBeat,errorCount:integrity.errors.length});if(!integrity.ok)throw new Error('Technische Partitur ist beschädigt: '+integrity.errors.slice(0,8).join(' | '));run.score=score;
  const title=String(score?.title||'').trim(),allTitles=usedTitles.filter(Boolean);if(title&&allTitles.some(t=>String(t).toLocaleLowerCase('de-DE')===title.toLocaleLowerCase('de-DE'))){let nt=(await call(duplicateTitlePrompt(title,allTitles,draft),'title_renaming')).trim().replace(/^Titel:\s*/i,'').replace(/^['“”"]|['“”"]$/g,'').trim();if(!nt||allTitles.some(t=>String(t).toLocaleLowerCase('de-DE')===nt.toLocaleLowerCase('de-DE')))nt=title+' '+new Date().toLocaleDateString('de-DE');score.title=nt;ev('duplicate_title_replaced',{oldTitle:title,newTitle:nt})}
  const midiBytes=buildMidi(score),buf=midiBytes.buffer.slice(midiBytes.byteOffset,midiBytes.byteOffset+midiBytes.byteLength),midiHash=await sha256Buffer(buf);run.midi={bytes:midiBytes.byteLength,sha256:midiHash,note:'Deterministisch lokal aus den unveränderten Partiturwerten erzeugt; keine musikalische Nachbearbeitung.'};ev('midi_generated',{bytes:midiBytes.byteLength,sha256:midiHash});
  const idea=await call(createPrompts(snapshot,draft,translated).compositionIdea,'composition_idea_afterwards');run.idea=idea.trim();run.profile=compositionProfile(snapshot,score,draft,run.idea);ev('composition_profile_created',{bpm:run.profile.bpm,tempo:run.profile.tempo,key:run.profile.key,barCount:run.profile.barCount,provider:run.profile.provider,model:run.profile.model});run.completedAt=now();run.status='ok';
  return{run,midiBytes};
 }
 
-window.CompositionEngine=Object.freeze({name:ENGINE_NAME,version:ENGINE_VERSION,compose,TECHNICAL_CONTRACT,createPrompts,duplicateTitlePrompt,makeRequest,actualRequest,extractText,extractJson,findScore,findIdea,sha256Text,sha256Buffer,buildMidi});
+window.CompositionEngine=Object.freeze({name:ENGINE_NAME,version:ENGINE_VERSION,compose,TECHNICAL_CONTRACT,createPrompts,duplicateTitlePrompt,makeRequest,actualRequest,extractText,extractJson,findScore,findIdea,sha256Text,sha256Buffer,buildMidi,validateTechnicalScore});
 })();
