@@ -29,7 +29,7 @@
     },
     {
       "id": "pure-1",
-      "label": "Pure – nur eigener Auftrag",
+      "label": "Pure.1 – nur eigener Auftrag (archiviert)",
       "version": "1.2.0-pure.1",
       "url": "engines/composition-engine-v1.2.0-pure.1.js",
       "channel": "experimental",
@@ -40,6 +40,14 @@
       "label": "Experimental aktuell",
       "version": "1.2.0-experimental.4",
       "url": "composition-engine-experimental.js",
+      "channel": "experimental",
+      "archived": false
+    },
+    {
+      "id": "pure-2",
+      "label": "Pure.2 – nur eigener Auftrag",
+      "version": "1.2.0-pure.2",
+      "url": "engines/composition-engine-v1.2.0-pure.2.js",
       "channel": "experimental",
       "archived": false
     }
