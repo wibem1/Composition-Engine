@@ -5,7 +5,7 @@ window.CompositionEngineCatalog={standard,'standard-1.1.2':standard};
 function loadScript(url){return new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=url+(url.includes('?')?'&':'?')+'t='+Date.now();s.onload=resolve;s.onerror=()=>reject(new Error('Engine konnte nicht geladen werden: '+url));document.head.appendChild(s)})}
 async function init(){
  const r=await fetch(BASE+'engine-manifest.json?ts='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error('Engine-Liste konnte nicht geladen werden.');
- const manifest=await r.json();const reg=window.CompositionEngineCatalog;
+ const manifest=await r.json();window.CompositionEngineManifest=manifest;const reg=window.CompositionEngineCatalog;
  for(const item of manifest.engines||[]){
    if(item.id==='standard-1.1.2'){reg[item.id]=standard;continue}
    if(item.id==='experimental-current')continue;
@@ -18,7 +18,7 @@ async function init(){
    sel.value=reg[previous]?previous:(previous==='standard'?'standard-1.1.2':(previous==='sound-first'&&reg['experimental-3']?'experimental-3':'experimental-4'));
    sel.dispatchEvent(new Event('change',{bubbles:true}));
  }
- return manifest
+ window.dispatchEvent(new CustomEvent('composition-engine-catalog-ready',{detail:manifest}));return manifest
 }
 window.CompositionEngineCatalogReady=init().catch(e=>{console.error(e);return null});
 })();
