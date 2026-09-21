@@ -1,7 +1,7 @@
 (()=>{'use strict';
 const BASE='https://wibem1.github.io/Composition-Engine/';
 const standard=window.CompositionEngine;
-window.CompositionEngineCatalog={standard};
+window.CompositionEngineCatalog={standard,'standard-1.1.2':standard};
 function loadScript(url){return new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=url+(url.includes('?')?'&':'?')+'t='+Date.now();s.onload=resolve;s.onerror=()=>reject(new Error('Engine konnte nicht geladen werden: '+url));document.head.appendChild(s)})}
 async function init(){
  const r=await fetch(BASE+'engine-manifest.json?ts='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error('Engine-Liste konnte nicht geladen werden.');
@@ -15,7 +15,7 @@ async function init(){
  for(const id of ['engineSelect','compositionEngineSelect']){
    const sel=document.getElementById(id);if(!sel)continue;const previous=sel.value;
    sel.innerHTML='';for(const item of options){const o=document.createElement('option');o.value=item.id;o.textContent=item.label;sel.appendChild(o)}
-   sel.value=reg[previous]?previous:(previous==='sound-first'&&reg['experimental-3']?'experimental-3':'experimental-4');
+   sel.value=reg[previous]?previous:(previous==='standard'?'standard-1.1.2':(previous==='sound-first'&&reg['experimental-3']?'experimental-3':'experimental-4'));
    sel.dispatchEvent(new Event('change',{bubbles:true}));
  }
  return manifest
