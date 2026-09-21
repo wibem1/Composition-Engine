@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updated": "2026-09-21",
+  "updated": "2026-09-22",
   "default": "experimental-current",
   "engines": [
     {
@@ -45,9 +45,17 @@
     },
     {
       "id": "pure-2",
-      "label": "Pure.2 – nur eigener Auftrag",
+      "label": "Pure.2 – nur eigener Auftrag (archiviert)",
       "version": "1.2.0-pure.2",
       "url": "engines/composition-engine-v1.2.0-pure.2.js",
+      "channel": "experimental",
+      "archived": true
+    },
+    {
+      "id": "pure-3",
+      "label": "Pure.3 – strikt minimal",
+      "version": "1.2.0-pure.3",
+      "url": "engines/composition-engine-v1.2.0-pure.3.js",
       "channel": "experimental",
       "archived": false
     }
