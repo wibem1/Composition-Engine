@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "updated": "2026-09-21",
+  "default": "experimental-current",
+  "engines": [
+    {
+      "id": "standard-1.1.2",
+      "label": "Standard v1.1.2",
+      "version": "1.1.2",
+      "url": "composition-engine.js",
+      "channel": "stable",
+      "archived": true
+    },
+    {
+      "id": "experimental-3",
+      "label": "Experimental.3 – Sound-first",
+      "version": "1.2.0-experimental.3",
+      "url": "engines/composition-engine-v1.2.0-experimental.3.js",
+      "channel": "experimental",
+      "archived": true
+    },
+    {
+      "id": "experimental-4",
+      "label": "Experimental.4 – Sound-first + musikalisches Gedächtnis",
+      "version": "1.2.0-experimental.4",
+      "url": "engines/composition-engine-v1.2.0-experimental.4.js",
+      "channel": "experimental",
+      "archived": true
+    },
+    {
+      "id": "experimental-current",
+      "label": "Experimental aktuell",
+      "version": "1.2.0-experimental.4",
+      "url": "composition-engine-experimental.js",
+      "channel": "experimental",
+      "archived": false
+    }
+  ]
+}
