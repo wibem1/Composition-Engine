@@ -38,7 +38,7 @@
     {
       "id": "experimental-current",
       "label": "Experimental aktuell",
-      "version": "1.2.0-experimental.4",
+      "version": "1.3.0-experimental.4",
       "url": "composition-engine-experimental.js",
       "channel": "experimental",
       "archived": false
@@ -54,7 +54,7 @@
     {
       "id": "pure-3",
       "label": "Pure.3 – strikt minimal",
-      "version": "1.2.0-pure.3",
+      "version": "1.3.0-pure.3",
       "url": "engines/composition-engine-v1.2.0-pure.3.js",
       "channel": "experimental",
       "archived": false
