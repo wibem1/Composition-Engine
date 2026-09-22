@@ -1,7 +1,7 @@
 (()=>{'use strict';
 
 const ENGINE_NAME='Composition Engine';
-const ENGINE_VERSION='1.2.0-experimental.5';
+const ENGINE_VERSION='1.3.0-experimental.4';
 
 const TECHNICAL_CONTRACT=`TECHNISCHES FORMAT (kompakt):\nNur valides JSON.\n{\"t\":\"Titel\",\"b\":BPM,\"m\":[Z,N],\"v\":[[\"Instrument\",Program,Channel,[[Takt,Position,Dauer,Pitch,Velocity,"Notenname?"],...]],...]}\nTakt beginnt bei 1, Position bei 0. Pausen durch Lücken. Jede klingende Note des Entwurfs genau einmal ausgeben. Optionaler Notenname bewahrt die beabsichtigte Schreibweise (z. B. Db4/C#4). Keine musikalischen Änderungen.`;
 function createPrompts(snapshot,draft='',translated=''){
