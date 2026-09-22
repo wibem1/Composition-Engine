@@ -11,7 +11,7 @@ async function init(){
    if(item.id==='experimental-current')continue;
    await loadScript(BASE+item.url);reg[item.id]=window.CompositionEngine;window.CompositionEngine=standard;
  }
- const options=(manifest.engines||[]).filter(x=>x.id!=='experimental-current');
+ const options=(manifest.engines||[]).filter(x=>!x.archived&&x.id!=='experimental-current');
  for(const id of ['engineSelect','compositionEngineSelect']){
    const sel=document.getElementById(id);if(!sel)continue;const previous=sel.value;
    sel.innerHTML='';for(const item of options){const o=document.createElement('option');o.value=item.id;o.textContent=item.label;sel.appendChild(o)}
