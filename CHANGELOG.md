@@ -1,3 +1,11 @@
+## 1.3.0 — 2026-09-22
+
+- Datenfluss konsolidiert: reguläre Komposition benötigt nur noch kreativen Entwurf + technische Übersetzung; die Kompositionsbeschreibung wird lokal aus dem bereits vorhandenen Entwurf abgeleitet.
+- Kompaktes technisches Austauschformat bleibt vollständig notengetreu und bewahrt optional die notierte Tonhöhe.
+- Doppelte Titel senden nur noch einen kurzen Kontext statt des vollständigen Entwurfs.
+- Aktive Varianten verwenden dieselbe kostenbewusste technische Grundlage; archivierte Engines werden vom Katalog nicht mehr geladen.
+- Grundsatz: große musikalische Nutzdaten werden nur an eine KI gesendet, wenn der jeweilige Arbeitsschritt sie tatsächlich benötigt.
+
 # Changelog
 
 ## 1.1.2 – 2026-09-20
