@@ -8,14 +8,14 @@ async function init(){
  const manifest=await r.json();window.CompositionEngineManifest=manifest;const reg=window.CompositionEngineCatalog;
  for(const item of manifest.engines||[]){
    if(item.id==='standard-1.1.2'){reg[item.id]=standard;continue}
-   if(item.id==='experimental-current')continue;
+   if(item.archived||item.id==='experimental-current')continue;
    await loadScript(BASE+item.url);reg[item.id]=window.CompositionEngine;window.CompositionEngine=standard;
  }
  const options=(manifest.engines||[]).filter(x=>!x.archived&&x.id!=='experimental-current');
  for(const id of ['engineSelect','compositionEngineSelect']){
    const sel=document.getElementById(id);if(!sel)continue;const previous=sel.value;
    sel.innerHTML='';for(const item of options){const o=document.createElement('option');o.value=item.id;o.textContent=item.label;sel.appendChild(o)}
-   sel.value=reg[previous]?previous:(previous==='standard'?'standard-1.1.2':(previous==='sound-first'&&reg['experimental-3']?'experimental-3':'experimental-4'));
+   const fallback=(manifest.default&&reg[manifest.default])?manifest.default:(options[0]?.id||'standard-1.1.2');sel.value=reg[previous]?previous:(previous==='standard'?'standard-1.1.2':fallback);
    sel.dispatchEvent(new Event('change',{bubbles:true}));
  }
  window.dispatchEvent(new CustomEvent('composition-engine-catalog-ready',{detail:manifest}));return manifest
