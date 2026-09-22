@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "updated": "2026-09-22",
-  "default": "experimental-current",
+  "default": "compact-handoff-1",
   "engines": [
     {
       "id": "standard-1.1.2",
@@ -56,6 +56,14 @@
       "label": "Pure.3 – strikt minimal",
       "version": "1.2.0-pure.3",
       "url": "engines/composition-engine-v1.2.0-pure.3.js",
+      "channel": "experimental",
+      "archived": false
+    },
+    {
+      "id": "compact-handoff-1",
+      "label": "Experimental – kompakter Übergang",
+      "version": "1.3.0-experimental.1",
+      "url": "engines/composition-engine-v1.3.0-experimental.1.js",
       "channel": "experimental",
       "archived": false
     }
