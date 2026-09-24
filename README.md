@@ -1,28 +1,24 @@
 # Composition Engine
 
-Gemeinsames appübergreifendes Kompositionsmodul für die Klangwerke-Kompositionswerkzeuge.
+Gemeinsamer appübergreifender Kompositionskern für die Klangwerke-Kompositionswerkzeuge.
 
 ## Aktuelle Version
-**Composition Engine v1.1.2**
+**Composition Engine v2.0.0 – Klangvorstellung**
 
-Dieser Stand ist die verbindliche Quelle der Engine, die in Minimal Composer und MusicChat lokal eingebettet wird. Native Apps und DAW-Werkzeuge sollen dieselbe freigegebene Engine-Version lokal übernehmen bzw. an ihre Laufzeitumgebung adaptieren. Es entsteht dadurch keine zusätzliche Web-Abhängigkeit.
+Die musikalisch entscheidende Pipeline ist:
+1. **Klangvorstellung (Bauch):** ausschließlich klingende Idee, Gestik, Spannung, Bewegung, Dichte, Register, Kontraste, Phrasierung und Dramaturgie. Keine Notation, keine Notennamen, kein LilyPond/ABC/MusicXML/JSON/MIDI.
+2. **Partiturrealisierung (Kopf):** aus der Klangvorstellung wird das vollständige Werk komponiert; alle nötigen musikalischen Entscheidungen werden hier getroffen.
+3. **Technische MIDI-Erzeugung (Hand):** deterministische lokale Materialisierung ohne zusätzliche musikalische Korrektur.
 
-## Grundprinzip
-Die Engine trennt musikalisches Komponieren von technischer MIDI-/Partitur-Materialisierung. Die etablierte Pipeline lautet:
-1. musical_draft
-2. midi_translation
-3. lokale deterministische MIDI-Erzeugung
-4. composition_idea_afterwards
-5. einheitliches Kompositionsprofil: BPM · Tempoangabe · Tonart · Taktanzahl · KI/Modell · knappe musikalische Beschreibung
-6. bestehende Behandlung doppelter Titel
+v2.0.0 basiert unverändert auf dem in Minimal Composer v0.5.99 praktisch getesteten Klangvorstellungs-Experiment, das bei den Vergleichstests mit OpenAI Sol den deutlichen Qualitätssprung erzeugte.
 
-Keine App darf ihre lokale Engine-Kopie stillschweigend musikalisch verändern. Änderungen werden zuerst hier versioniert und anschließend gezielt in die Apps übernommen.
+## Gemeinsame Nutzung
+- Minimal Composer und MusicChat laden die freigegebene Engine über den zentralen Engine-Katalog.
+- Native Apps und DAW-Werkzeuge übernehmen dieselbe Prompt-/Pipeline-Logik lokal. Dadurch entsteht **keine zusätzliche Web-Abhängigkeit**.
+- App-spezifische UI-, Player-, Datei- und DAW-Funktionen gehören nicht in den musikalischen Kern.
 
-## Herkunft von v1.0.0
-v1.0.0 basiert auf dem praktisch erprobten gemeinsamen Engine-Stand, der in Minimal Composer Modular und MusicChat verwendet wurde. Die Produktidentität der aufrufenden App gehört nicht zur Engine-Version.
+## Regel
+Musikalische Änderungen werden zuerst hier versioniert und danach gezielt in die Apps übernommen. Die Engine darf nicht durch app-spezifische Zusatzregeln stillschweigend verändert werden.
 
-## Versionsregel
+## Versionierung
 SemVer: MAJOR.MINOR.PATCH.
-- MAJOR: inkompatible Schnittstellen-/Architekturänderung
-- MINOR: neue kompatible Engine-Funktion
-- PATCH: kompatible Fehlerkorrektur ohne beabsichtigte musikalische Verhaltensänderung
