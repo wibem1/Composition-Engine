@@ -1,14 +1,46 @@
 {
   "schemaVersion": 1,
-  "updated": "2026-09-24",
-  "default": "klangvorstellung-2",
+  "updated": "2026-09-25",
+  "default": "reference-1.3.0",
   "engines": [
     {
-      "id": "standard-1.1.2",
-      "label": "Standard v1.1.2",
-      "version": "1.1.2",
+      "id": "reference-1.3.0",
+      "label": "Referenz – Engine 1.3.0",
+      "version": "1.3.0",
       "url": "composition-engine.js",
       "channel": "stable",
+      "archived": false
+    },
+    {
+      "id": "experimental-current",
+      "label": "Experimental aktuell",
+      "version": "1.3.0-experimental.4",
+      "url": "composition-engine-experimental.js",
+      "channel": "experimental",
+      "archived": false
+    },
+    {
+      "id": "pure-3",
+      "label": "Pure.3 – strikt minimal",
+      "version": "1.3.0-pure.3",
+      "url": "engines/composition-engine-v1.2.0-pure.3.js",
+      "channel": "experimental",
+      "archived": false
+    },
+    {
+      "id": "klangvorstellung-2",
+      "label": "Klangvorstellung – Engine 2.0 (Experiment)",
+      "version": "2.0.0",
+      "url": "composition-engine-v2.js",
+      "channel": "experimental",
+      "archived": false
+    },
+    {
+      "id": "standard-1.1.2",
+      "label": "Standard v1.1.2 (Archiv)",
+      "version": "1.1.2",
+      "url": "composition-engine.js",
+      "channel": "archived",
       "archived": true
     },
     {
@@ -29,43 +61,19 @@
     },
     {
       "id": "pure-1",
-      "label": "Pure.1 – nur eigener Auftrag (archiviert)",
+      "label": "Pure.1 – nur eigener Auftrag",
       "version": "1.2.0-pure.1",
       "url": "engines/composition-engine-v1.2.0-pure.1.js",
       "channel": "experimental",
       "archived": true
     },
     {
-      "id": "experimental-current",
-      "label": "Experimental aktuell",
-      "version": "1.3.0-experimental.4",
-      "url": "composition-engine-experimental.js",
-      "channel": "experimental",
-      "archived": false
-    },
-    {
       "id": "pure-2",
-      "label": "Pure.2 – nur eigener Auftrag (archiviert)",
+      "label": "Pure.2 – nur eigener Auftrag",
       "version": "1.2.0-pure.2",
       "url": "engines/composition-engine-v1.2.0-pure.2.js",
       "channel": "experimental",
       "archived": true
-    },
-    {
-      "id": "pure-3",
-      "label": "Pure.3 – strikt minimal",
-      "version": "1.3.0-pure.3",
-      "url": "engines/composition-engine-v1.2.0-pure.3.js",
-      "channel": "experimental",
-      "archived": false
-    },
-    {
-      "id": "klangvorstellung-2",
-      "label": "Klangvorstellung – Engine 2.0",
-      "version": "2.0.0",
-      "url": "composition-engine-v2.js",
-      "channel": "stable",
-      "archived": false
     }
   ]
 }
