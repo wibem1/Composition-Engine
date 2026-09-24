@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "updated": "2026-09-22",
-  "default": "pure-3",
+  "updated": "2026-09-24",
+  "default": "klangvorstellung-2",
   "engines": [
     {
       "id": "standard-1.1.2",
@@ -57,6 +57,14 @@
       "version": "1.3.0-pure.3",
       "url": "engines/composition-engine-v1.2.0-pure.3.js",
       "channel": "experimental",
+      "archived": false
+    },
+    {
+      "id": "klangvorstellung-2",
+      "label": "Klangvorstellung – Engine 2.0",
+      "version": "2.0.0",
+      "url": "composition-engine-v2.js",
+      "channel": "stable",
       "archived": false
     }
   ]
