@@ -41,3 +41,11 @@
 - Keine App darf eine konkrete Engine-Version in der URL fest verdrahten.
 - Kandidaten werden getrennt entwickelt; erst nach Prüfung wird der zentrale Entry-Point aktualisiert.
 - Rollback erfolgt zentral auf den letzten funktionierenden Engine-Commit, ohne App-Änderung.
+
+
+## 2.2.0 – 25.09.2026 – FREIGEGEBEN
+- Zentraler Runtime-Entry-Point auf 2.2.0 aktualisiert.
+- Freie Komposition und technische Übersetzung aus 2.1 bleiben erhalten.
+- Neuer dritter KI-Schritt analysiert die fertige Komposition musikalisch.
+- Kompositionsbeschreibung stammt aus dieser Analyse statt aus lokaler Extraktion einer Prosazeile.
+- Analyse darf schematische Wiederholung und geringe Entwicklung konkret benennen, verändert die Komposition aber nicht.
