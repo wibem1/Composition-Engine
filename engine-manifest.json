@@ -75,5 +75,16 @@
       "channel": "experimental",
       "archived": true
     }
-  ]
+  ],
+  "candidate": {
+    "version": "2.2.0-rc1",
+    "entry": "composition-engine.js",
+    "status": "release-candidate",
+    "basis": "2.1.0",
+    "changes": [
+      "Post-composition analysis is a real AI stage over the finished musical draft",
+      "Composition description is derived from that analysis, not locally extracted",
+      "No KEEP/CHANGE verdict, no recomposition in analysis stage"
+    ]
+  }
 }
