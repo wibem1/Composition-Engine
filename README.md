@@ -34,3 +34,7 @@ Minimal Composer und MusicChat laden den zentralen freigegebenen Entry-Point. Na
 Vor jeder Freigabe werden Architekturvertrag, tatsächlicher Code, Diagnosepfad und Versions-/Cachebindung gegeneinander geprüft. Aussagen werden als festgestellt, abgeleitet oder unbestätigt unterschieden.
 
 SemVer: MAJOR.MINOR.PATCH.
+
+
+## Release Candidate 2.2.0-rc1 (25.09.2026)
+Engine 2.1 bleibt der freigegebene stabile Stand. Der Kandidat 2.2 ergänzt nach der unveränderten freien Komposition und technischen Übertragung eine echte musikalische Nachanalyse des fertigen Entwurfs. Aus dieser Analyse entsteht die Kompositionsbeschreibung. Die Analyse darf weder neu komponieren noch BEHALTEN/ÄNDERN entscheiden.
