@@ -1,7 +1,7 @@
 (()=>{'use strict';
 
 const ENGINE_NAME='Composition Engine';
-const ENGINE_VERSION='2.0.0';
+const ENGINE_VERSION='2.0.1';
 
 const TECHNICAL_CONTRACT=`TECHNISCHES FORMAT (kompakt):\nNur valides JSON.\n{\"t\":\"Titel\",\"b\":BPM,\"m\":[Z,N],\"v\":[[\"Instrument\",Program,Channel,[[Takt,Position,Dauer,Pitch,Velocity,"Notenname?"],...]],...]}\nTakt beginnt bei 1, Position bei 0. Pausen durch Lücken. Jede klingende Note des Entwurfs genau einmal ausgeben. Optionaler Notenname bewahrt die beabsichtigte Schreibweise (z. B. Db4/C#4). Keine musikalischen Änderungen.`;
 function createPrompts(snapshot,concept='',translated=''){
@@ -32,12 +32,27 @@ function providerName(p){return p==='anthropic'?'Anthropic / Claude':p==='google
 function localDescription(draft){const lines=String(draft||'').split(/\r?\n/).map(s=>s.trim()).filter(Boolean);const prose=lines.find(s=>!/^([#*\-]|Titel\s*:|Tonart\s*:|Tempo\s*:|Taktart\s*:|Form\s*:)/i.test(s)&&s.length>35);return String(prose||'').replace(/[*#]/g,'').slice(0,500).trim()}
 function compositionProfile(snapshot,score,draft,description){const bpm=Number(score?.bpm)||null,key=String(score?.key||score?.keySignature||score?.tonality||draftField(draft,'Tonart')||'').trim(),tempo=String(score?.tempo||score?.tempoMarking||draftField(draft,'Tempo')||'').trim(),bars=scoreBarCount(score),provider=providerName(snapshot?.provider),model=String(snapshot?.model||'').trim();const fields=[bpm?bpm+' BPM':'',tempo,key,bars+' Takte',[provider,model].filter(Boolean).join(' · ')].filter(Boolean);return{bpm,tempo,key,barCount:bars,provider,model,description:String(description||'').trim(),text:fields.join(' · ')+'\n\n'+String(description||'').trim()}}
 async function compose({snapshot,key,repeatOf=null,seriesId=null,runId,now,requestModel,usedTitles=[]}){
- const startedAt=now(),run={id:runId,testId:runId,schema:'minimal-composer-diagnosis-v3',app:{name:'Composition Engine Client',version:'2.0.0'},seriesId,startedAt,repeatOf,contextMode:'isolated-sound-concept-two-stage',input:{visibleTask:snapshot.visibleTask,provider:snapshot.provider,model:snapshot.model},technicalContract:TECHNICAL_CONTRACT,events:[],aiCalls:[],requestSnapshot:structuredClone(snapshot)};
+ const startedAt=now(),run={id:runId,testId:runId,schema:'minimal-composer-diagnosis-v3',app:{name:'Composition Engine Client',version:ENGINE_VERSION},seriesId,startedAt,repeatOf,contextMode:'isolated-sound-concept-two-stage',input:{visibleTask:snapshot.visibleTask,provider:snapshot.provider,model:snapshot.model},technicalContract:TECHNICAL_CONTRACT,events:[],aiCalls:[],requestSnapshot:structuredClone(snapshot)};
  const ev=(phase,data={})=>run.events.push({at:now(),phase,...data});
  ev('run_started',{note:'Keine frühere Unterhaltung oder Komposition wird an das Modell übertragen.'});
  const call=async(prompt,stage)=>requestModel({snapshot,key,promptText:prompt,stage,run,event:ev});
  const draft=await call(createPrompts(snapshot).musicalDraft,'sound_concept');if(!draft.trim())throw new Error('Die klingende Vorstellung ist leer.');run.musicalDraft=draft;run.soundConcept=draft;
- const translated=await call(createPrompts(snapshot,draft).midiTranslation,'score_realization');const obj=extractJson(translated);run.parsedModelJson=obj;ev('model_json_parsed',{stage:'score_realization',changed:false,note:'Nur JSON geparst; keine musikalische Korrektur.'});const score=findScore(obj);run.score=score;
+ let translated=await call(createPrompts(snapshot,draft).midiTranslation,'score_realization');
+ const validJson=s=>{try{extractJson(s);return true}catch{return false}};
+ if(!validJson(translated)){
+   ev('score_realization_incomplete',{characters:translated.length,note:'Technische JSON-Partitur unvollständig; musikalische Klangvorstellung bleibt unverändert.'});
+   for(let attempt=0;attempt<2&&!validJson(translated);attempt++){
+     const tail=translated.slice(-2400);
+     const continuation='Die technische JSON-Partitur wurde bei der Ausgabe abgeschnitten. Setze exakt an der Abbruchstelle fort. Keine Wiederholung, keine Einleitung, keine neuen Noten und keine musikalischen Änderungen. Antworte ausschließlich mit dem unmittelbar anschließenden JSON-Text bis zum Abschluss. Letzte Zeichen der bisherigen Ausgabe:\\n'+tail;
+     let addition=String(await call(continuation,'score_realization_continuation_'+(attempt+1))||'').trim().replace(/^\`\`\`(?:json)?\\s*/i,'').replace(/\\s*\`\`\`$/,'');
+     const overlap=Math.min(translated.length,addition.length,1200);let matched=0;
+     for(let n=overlap;n>0;n--)if(translated.endsWith(addition.slice(0,n))){matched=n;break}
+     translated+=addition.slice(matched);
+     ev('score_realization_continued',{attempt:attempt+1,addedCharacters:addition.length-matched,totalCharacters:translated.length});
+   }
+ }
+ if(!validJson(translated))throw new Error('Technische Partiturausgabe auch nach zwei Fortsetzungen unvollständig. Die Komposition wurde nicht verändert.');
+ const obj=extractJson(translated);run.parsedModelJson=obj;ev('model_json_parsed',{stage:'score_realization',changed:false,note:'Nur JSON geparst; keine musikalische Korrektur.'});const score=findScore(obj);run.score=score;
  const title=String(score?.title||'').trim(),allTitles=usedTitles.filter(Boolean);if(title&&allTitles.some(t=>String(t).toLocaleLowerCase('de-DE')===title.toLocaleLowerCase('de-DE'))){let nt=(await call(duplicateTitlePrompt(title,allTitles,draft),'title_renaming')).trim().replace(/^Titel:\s*/i,'').replace(/^['“”"]|['“”"]$/g,'').trim();if(!nt||allTitles.some(t=>String(t).toLocaleLowerCase('de-DE')===nt.toLocaleLowerCase('de-DE')))nt=title+' '+new Date().toLocaleDateString('de-DE');score.title=nt;ev('duplicate_title_replaced',{oldTitle:title,newTitle:nt})}
  const midiBytes=buildMidi(score),buf=midiBytes.buffer.slice(midiBytes.byteOffset,midiBytes.byteOffset+midiBytes.byteLength),midiHash=await sha256Buffer(buf);run.midi={bytes:midiBytes.byteLength,sha256:midiHash,note:'Deterministisch lokal aus den unveränderten Partiturwerten erzeugt; keine musikalische Nachbearbeitung.'};ev('midi_generated',{bytes:midiBytes.byteLength,sha256:midiHash});
  const idea=localDescription(draft);run.idea=idea;ev('composition_description_derived_local',{characters:idea.length});run.profile=compositionProfile(snapshot,score,draft,run.idea);ev('composition_profile_created',{bpm:run.profile.bpm,tempo:run.profile.tempo,key:run.profile.key,barCount:run.profile.barCount,provider:run.profile.provider,model:run.profile.model});run.completedAt=now();run.status='ok';
