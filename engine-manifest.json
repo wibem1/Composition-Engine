@@ -5,8 +5,8 @@
   "engines": [
     {
       "id": "stable-current",
-      "label": "Aktuelle freigegebene Engine 2.1.0",
-      "version": "2.1.0",
+      "label": "Aktuelle freigegebene Engine 2.2.0",
+      "version": "2.2.0",
       "url": "composition-engine.js",
       "channel": "stable",
       "archived": false
@@ -75,5 +75,6 @@
       "channel": "experimental",
       "archived": true
     }
-  ]
+  ],
+  "defaultEngine": "stable-current"
 }
