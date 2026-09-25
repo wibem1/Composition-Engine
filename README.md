@@ -2,7 +2,7 @@
 
 Gemeinsamer appübergreifender Kompositionskern für die Klangwerke-Kompositionswerkzeuge.
 
-## Stabile Architektur – 2.1.0
+## Stabile Architektur – 2.2.0
 
 Der verbindliche Normalfall ist:
 
@@ -38,3 +38,7 @@ SemVer: MAJOR.MINOR.PATCH.
 
 ## Verbindlicher Freigabe- und Rollback-Vertrag
 `composition-engine.js` auf `main` ist der einzige zentral freigegebene Runtime-Entry-Point für die Web-Apps. Apps laden diesen Pfad ohne Versionsparameter und ohne lokale Kopie der Standard-Engine. Neue Engine-Stände werden zunächst getrennt entwickelt und geprüft. Erst die Freigabe ersetzt den Inhalt des zentralen Entry-Points. Bei einem Fehler wird ausschließlich dieser zentrale Engine-Stand auf den letzten nachweislich funktionierenden Commit zurückgesetzt; die Apps werden dafür nicht versioniert oder geforkt.
+
+
+## Freigabe 2.2.0 – 25.09.2026
+Der zentrale Runtime-Entry-Point `composition-engine.js` enthält nun Engine 2.2.0. Gegenüber 2.1 bleibt die freie Komposition und werkgetreue technische Übersetzung unverändert; anschließend folgt eine echte KI-Analyse der fertigen Komposition. Die Kompositionsbeschreibung wird aus dieser Analyse erzeugt. Die Analyse bewertet nicht mit BEHALTEN/ÄNDERN und verändert die Komposition nicht.
