@@ -34,3 +34,10 @@
 - Nachträgliche Kompositionsidee.
 - Behandlung doppelter Werktitel.
 - Keine Retry-/Kontroll-KI und keine zusätzlichen musikalischen Regelketten.
+
+
+## 2026-09-25 – Zentraler Release-Vertrag
+- `composition-engine.js` auf `main` ist der einzige freigegebene Runtime-Entry-Point der Web-Apps.
+- Keine App darf eine konkrete Engine-Version in der URL fest verdrahten.
+- Kandidaten werden getrennt entwickelt; erst nach Prüfung wird der zentrale Entry-Point aktualisiert.
+- Rollback erfolgt zentral auf den letzten funktionierenden Engine-Commit, ohne App-Änderung.
