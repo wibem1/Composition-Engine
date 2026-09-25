@@ -34,3 +34,7 @@ Minimal Composer und MusicChat laden den zentralen freigegebenen Entry-Point. Na
 Vor jeder Freigabe werden Architekturvertrag, tatsächlicher Code, Diagnosepfad und Versions-/Cachebindung gegeneinander geprüft. Aussagen werden als festgestellt, abgeleitet oder unbestätigt unterschieden.
 
 SemVer: MAJOR.MINOR.PATCH.
+
+
+## Verbindlicher Freigabe- und Rollback-Vertrag
+`composition-engine.js` auf `main` ist der einzige zentral freigegebene Runtime-Entry-Point für die Web-Apps. Apps laden diesen Pfad ohne Versionsparameter und ohne lokale Kopie der Standard-Engine. Neue Engine-Stände werden zunächst getrennt entwickelt und geprüft. Erst die Freigabe ersetzt den Inhalt des zentralen Entry-Points. Bei einem Fehler wird ausschließlich dieser zentrale Engine-Stand auf den letzten nachweislich funktionierenden Commit zurückgesetzt; die Apps werden dafür nicht versioniert oder geforkt.
