@@ -34,3 +34,11 @@
 - Nachträgliche Kompositionsidee.
 - Behandlung doppelter Werktitel.
 - Keine Retry-/Kontroll-KI und keine zusätzlichen musikalischen Regelketten.
+
+
+## 2.2.0-rc1 – 2026-09-25
+- Basis bleibt die zweistufige freie Kompositionsarchitektur von 2.1.
+- Neue echte KI-Nachanalyse der fertigen Komposition.
+- Kompositionsbeschreibung wird aus dem fertigen Werk analysiert statt lokal aus einer Entwurfszeile abgeleitet.
+- Analyse benennt bei tatsächlichem Auftreten auch Figurationsmelodik, schematische Wiederholung, geringe Entwicklung und mangelnden rhythmischen/stimmlichen Dialog.
+- Keine Bewertungsskala, kein BEHALTEN/ÄNDERN, keine Verbesserungsschleife und keine Neukomposition in der Analysephase.
