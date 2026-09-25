@@ -5,8 +5,8 @@
   "engines": [
     {
       "id": "stable-current",
-      "label": "Aktuelle freigegebene Engine 2.0.1",
-      "version": "2.0.1",
+      "label": "Aktuelle freigegebene Engine 2.1.0",
+      "version": "2.1.0",
       "url": "composition-engine.js",
       "channel": "stable",
       "archived": false
@@ -29,11 +29,11 @@
     },
     {
       "id": "klangvorstellung-2",
-      "label": "Klangvorstellung – Engine 2.0 (identisch mit stable-current)",
+      "label": "Klangvorstellung – Engine 2.0 (Experiment, nicht Standard)",
       "version": "2.0.0",
       "url": "composition-engine-v2.js",
-      "channel": "stable",
-      "archived": false
+      "channel": "experimental",
+      "archived": true
     },
     {
       "id": "standard-1.1.2",
