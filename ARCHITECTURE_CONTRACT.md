@@ -52,3 +52,10 @@ Eine Änderung, die einer dieser Regeln widerspricht, ist ein Architekturwechsel
 - Provider-Leistungssteuerung ist stufenbezogen: kreative Komposition und kritische musikalische Analyse bleiben ungedrosselt; rein technische Übersetzung sowie die Ausführung einer bereits freigegebenen Änderung dürfen providerabhängig mit niedriger Reasoning-Stufe laufen.
 
 - **Nach jeder freigegebenen Verbesserung wird die neue aktuelle Fassung erneut musikalisch analysiert.** Diese Folgeanalyse vergleicht Original, vorherige Analyse und verbesserte Fassung, ihr Urteil bezieht sich aber ausdrücklich auf die aktuelle verbesserte Fassung. Die vorherige Analyse bleibt versionsbezogen erhalten. Ergibt die Folgeanalyse erneut `URTEIL: ÄNDERN`, darf eine weitere Änderung nur nach erneuter ausdrücklicher Freigabe erfolgen; es gibt keine automatische Optimierungsschleife.
+
+## Hörfluss und unabhängige Folgeanalyse (ab Engine 2.5.0)
+
+- Kritische Analyse priorisiert den zeitlichen Hörfluss vor Formtheorie: ungewolltes Stolpern, Minipausen, Lücken, zu kurze Dauern, fehlende Bindung und abgehackte Übergänge werden anhand der Ereigniszeiten ausdrücklich geprüft.
+- Die freigegebene musikalische Überarbeitung ist keine rein technische Stufe und wird daher nicht auf niedrige Reasoning-Leistung gesetzt.
+- Die Folgeanalyse erhält ausschließlich die aktuelle verbesserte Partitur. Sie erhält weder Originalfassung noch frühere Analyse und beurteilt die neue Fassung unabhängig.
+- Sichtbare Analyse bleibt auf höchstens 450 Zeichen nach dem Urteil begrenzt.
