@@ -7,7 +7,7 @@ Dieser Index ist die zentrale Orientierung für die gemeinsam entwickelten Musik
 | Projekt | Repository | CURRENT | Engine | Status / Referenz |
 |---|---|---|---|---|
 | Composition Engine | wibem1/Composition-Engine | 2.3.1, main | 2.3.1 | CURRENT + zentrale stabile Engine. Manifest 2.3.1: 798430e. Regressionstests: 153a1c4. |
-| Minimal Composer | wibem1/Minimal-Composer | 0.8.12, main | zentrale 2.3.1 | CURRENT. App: 0ba38fd; Cache: 4d558a7. Musikalischer 2.3.0/2.3.1-Pfad vom Nutzer als Spitzenklasse beurteilt; Player-0.8.12 praktisch noch nicht als SAFE bestätigt. |
+| Minimal Composer | wibem1/Minimal-Composer | 0.8.13, main | zentrale 2.3.1 | CURRENT TEST CANDIDATE. App: ce05890; Cache: 9be7daa. Analyse wird jetzt sichtbar angezeigt; hörbezogene Kritik prüft ausdrücklich monotone/repetitive Begleitung, Textur, Register, Dynamik und Spannungsverlauf. Praktischer Test von 0.8.13 noch ausstehend. |
 | Music Chat Lab | wibem1/Music-Chat-Lab | 1.9.4, main | zentrale stabile Engine | CURRENT CODE. App: 79ea942; Cache: eaa5f8e. Praktischer 1.9.4-Runtime-Test noch nicht als SAFE dokumentiert. |
 | Composition Lab Native | wibem1/Composition-Lab-Native | 3.5.3 Build 3503, main | lokaler Port 2.3.1, Build 231 | CURRENT TEST CANDIDATE. main ist die eindeutige aktuelle Entwicklungsline. Ehemalige 6.1.1/Build-94-Linie als `reference-v6.1.1-build94` erhalten. Praktischer Test ausstehend. |
 | Composition Studio | wibem1/Composition-Studio | 1.0.4, main | lokale 2.3.1, Build 231 | CURRENT. Einzige aktive Update-Linie auf main; keine parallele Nutzerinstallation. Direkte Komposition → technische Übersetzung. Praktischer REAPER-Test von 1.0.4 noch nicht als SAFE dokumentiert. |
