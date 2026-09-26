@@ -59,3 +59,16 @@ Eine Änderung, die einer dieser Regeln widerspricht, ist ein Architekturwechsel
 - Die freigegebene musikalische Überarbeitung ist keine rein technische Stufe und wird daher nicht auf niedrige Reasoning-Leistung gesetzt.
 - Die Folgeanalyse erhält ausschließlich die aktuelle verbesserte Partitur. Sie erhält weder Originalfassung noch frühere Analyse und beurteilt die neue Fassung unabhängig.
 - Sichtbare Analyse bleibt auf höchstens 450 Zeichen nach dem Urteil begrenzt.
+
+
+## Engine 2.7 Architektur-Kandidat – überprüfbare kreative Quelle
+
+Diese Regeln gelten für den Kandidaten und ersetzen dort die bisherige KI-zu-KI-Übersetzung:
+
+- Die komponierende KI erzeugt **direkt die vollständige symbolische Partitur** im verbindlichen Kompositionsformat. Diese Partitur ist die musikalische Quelle der Wahrheit.
+- Es gibt **keine zweite KI für MIDI-/Partiturübersetzung**. Nach der kreativen Ausgabe folgen nur Parsing und deterministische lokale MIDI-Erzeugung.
+- Jede Tonhöhe, jeder Einsatz, jede Dauer und jede Pause muss bereits in der kreativen Quellpartitur festgelegt sein. Unbestimmte musikalische Prosa ist keine gültige Komposition für diesen Pfad.
+- Praktische Spielbarkeit im verlangten Tempo ist Teil des Kompositionsauftrags; sie wird nicht nachträglich von einer technischen KI erfunden oder repariert.
+- Analyse erhält die tatsächlich erzeugte symbolische Partitur. Sie darf nicht mit einer bloßen Beschreibung des Stücks verwechselt werden.
+- Eine freigegebene musikalische Verbesserung verändert die **musikalische Quellpartitur**; MIDI wird danach erneut deterministisch daraus erzeugt. Es gibt keine kreative Änderung auf einer davon getrennten technischen Kopie.
+- Der Kandidat bleibt auf einem separaten Branch. Der zentrale Runtime-Entry-Point auf main bleibt 2.6.1, bis technische Tests und ein bewusster musikalischer Test die neue Architektur rechtfertigen.
