@@ -12,6 +12,9 @@ Dieser Index ist die zentrale Orientierung für die gemeinsam entwickelten Musik
 | Composition Lab Native | wibem1/Composition-Lab-Native | 3.5.3 Build 3503 auf release/v3.5.3-engine-2.3.1 | lokaler Port 2.3.1, Build 231 | CURRENT TEST CANDIDATE. main ist ausdrücklich veraltete 6.x-Linie und darf nicht als CURRENT benutzt werden. Engine-Port-Commits u.a. 62e7d5b, f1a052c, d54a19e, 24c36bd, 01d1c97. Praktischer Test ausstehend. |
 | Composition Studio | wibem1/Composition-Studio | 1.0.4, main | lokale 2.3.1, Build 231 | CURRENT. Einzige aktive Update-Linie auf main; keine parallele Nutzerinstallation. Direkte Komposition → technische Übersetzung. Praktischer REAPER-Test von 1.0.4 noch nicht als SAFE dokumentiert. |
 | Composition Studio MiniDAW | wibem1/Composition-Studio-MiniDAW-Archive | historisch | fruehere MiniDAW/MAGDA-Architektur | HISTORICAL/OBSOLETE. Nicht fuer die aktuelle REAPER-Entwicklung verwenden. |
+| Notation Module | wibem1/Notation-Module | 0.1.23, main | eigenstaendiges Notationsmodul | STABLE laut projektspezifischer README. ABC-Notation, Wiedergabe, Import/Export, MIDI-Export, Druck/PDF ueber Systemdialog; MusicXML/MIDI-Import u.a. noch offen. |
+| Tune Search Module | wibem1/Tune-Search-Module | 0.6.2, main | eigenstaendiges Such-/Vorhoermodul | STABLE laut projektspezifischer README. Aktive Quellen: The Session, Gavin Heneghan, MuseTrainer. |
+| ABC Tools Referenz | wibem1/abctools | externer Referenz-Fork/Quellbestand | keine Composition Engine | REFERENCE ONLY. Michael Eskins ABC Tools; nicht als eigene aktive Klangwerke-App oder Entwicklungsbasis behandeln. |
 
 ## Verbindliche Statusbegriffe
 
@@ -46,3 +49,8 @@ Das produktive REAPER-Script ist verifiziert und in das aktive Repository wibem1
 Für Anwendungen, die 2.3.1 verwenden:
 Kompositionsauftrag → freie vollständige Komposition → rein technische werkgetreue Übersetzung → optional kurze Beschreibung danach.
 Kein vorgeschalteter musikalischer Entwurf/Formplan/Klangkonzept als eigene kreative Stufe.
+
+
+## Repository-Bestand – verifiziert 2026-09-26
+
+Aktive/erhaltene Repositories der Musikprojekte: Composition-Engine, Minimal-Composer, Music-Chat-Lab, Composition-Lab-Native, Composition-Studio, Notation-Module, Tune-Search-Module, Composition-Studio-MiniDAW-Archive sowie abctools als externe Referenz. Das zuvor beobachtete leere Repository `Composition--Studio` ist in der aktuell ueber die GitHub-Verbindung sichtbaren installierten Repository-Liste nicht mehr enthalten; daraus wird ohne separate Loeschbestaetigung keine Aussage ueber eine erfolgte Loeschung abgeleitet.
