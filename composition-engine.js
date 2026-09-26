@@ -83,12 +83,41 @@ function extractMidiPerformanceScore(text){
  if(!Array.isArray(head)||head.length<4||!tracks.length)throw new Error('Unvollständiges MIDI-Performance-Format.');
  return{title:String(head[0]||''),bpm:Number(head[1])||120,timeSignature:[Number(head[2])||4,Number(head[3])||4],tracks,tempoEvents};
 }
+function abcVelocityMap(raw){
+ const marks={ppp:28,pp:38,p:50,mp:62,mf:78,f:94,ff:110,fff:122,sfz:118,ffz:122,fp:92};
+ let velocity=78,pendingAccent=false,cresc=0;
+ const events=[];
+ const tokenRe=/!([^!]+)!|\+([^+]+)\+|\[V:[^\]]+\]|(?:\^\^|__|\^|_|=)?[A-Ga-g][,']*\d*(?:\/\d*|\/)?|[<>]/g;
+ let m;while((m=tokenRe.exec(String(raw||'')))){
+  const deco=String(m[1]||m[2]||'').toLowerCase().trim();
+  if(deco){
+   if(Object.prototype.hasOwnProperty.call(marks,deco)){velocity=marks[deco];cresc=0;continue}
+   if(/^(crescendo|cresc\.?|<)$/.test(deco)){cresc=1;continue}
+   if(/^(diminuendo|dim\.?|decresc\.?|>)$/.test(deco)){cresc=-1;continue}
+   if(/^(accent|sf|sff|sfz|sforzando|marcato|>)$/.test(deco)){pendingAccent=true;continue}
+   if(/^(endcrescendo|enddiminuendo|enddim|enddecrescendo)$/.test(deco)){cresc=0;continue}
+  }
+  if(m[0]==='<'){cresc=1;continue} if(m[0]==='>'){cresc=-1;continue}
+  if(/[A-Ga-g]/.test(m[0])){
+   let v=velocity;if(pendingAccent){v=Math.min(127,v+20);pendingAccent=false}
+   events.push(v);if(cresc)velocity=Math.max(20,Math.min(124,velocity+cresc*3));
+  }
+ }
+ return events;
+}
+function applyAbcVelocities(raw,score){
+ const velocities=abcVelocityMap(raw);if(!velocities.length)return score;
+ const notes=[];for(const tr of(score?.tracks||[]))for(const n of(tr.notes||[]))notes.push(n);
+ notes.sort((a,b)=>(Number(a?.[0])||0)-(Number(b?.[0])||0));
+ for(let i=0;i<notes.length&&i<velocities.length;i++)if(Array.isArray(notes[i])&&notes[i].length>=4)notes[i][3]=velocities[i];
+ return score;
+}
 function parseCompositionRepresentation(text,representation){
  let raw=String(text||'').trim(),r=representationOf({representation});
  if(r==='free'){const m=raw.match(/^FORMAT\|(COMPACT|ABC|MIDI)\s*\n?/i);if(!m)throw new Error('Freie Wahl ohne FORMAT-Kennung.');r=m[1].toLowerCase();raw=raw.slice(m[0].length).trim()}
  if(r==='compact'){if(/^\s*H\|/.test(raw))return{score:extractCompactScore(raw),format:'compact',raw};const obj=extractJson(raw);return{score:findScore(obj),format:'compact-json',raw,obj}}
  if(r==='midi')return{score:extractMidiPerformanceScore(raw),format:'midi',raw};
- if(r==='abc'){if(!globalThis.ABCImport||typeof globalThis.ABCImport.parse!=='function')throw new Error('ABC-Parser ist in dieser Anwendung nicht verfügbar.');return{score:globalThis.ABCImport.parse(raw),format:'abc',raw}}
+ if(r==='abc'){if(!globalThis.ABCImport||typeof globalThis.ABCImport.parse!=='function')throw new Error('ABC-Parser ist in dieser Anwendung nicht verfügbar.');return{score:applyAbcVelocities(raw,globalThis.ABCImport.parse(raw)),format:'abc',raw}}
  throw new Error('Unbekannte Musikrepräsentation.');
 }
 function extractJson(text){let s=String(text||'').trim().replace(/^\`\`\`(?:json)?\s*/i,'').replace(/\s*\`\`\`$/,'').trim();const parse=x=>JSON.parse(normalizeJsonNumbers(x));try{return parse(s)}catch(_){const closed=closeCompleteScoreJson(s);if(closed)return parse(closed);const a=s.indexOf('{'),b=s.lastIndexOf('}');if(a>=0&&b>a)return parse(s.slice(a,b+1));throw _}}
@@ -125,5 +154,5 @@ async function compose({snapshot,key,repeatOf=null,seriesId=null,runId,now,reque
  return{run,midiBytes};
 }
 
-window.CompositionEngine=Object.freeze({name:ENGINE_NAME,version:ENGINE_VERSION,representations:REPRESENTATION_CONTRACTS,compose,analyzeScore,analyzeImprovement,improveScore,COMPOSITION_CONTRACT,TECHNICAL_CONTRACT,createPrompts,criticalAnalysisPrompt,postImprovementAnalysisPrompt,approvedImprovementPrompt,scoreToCompact,duplicateTitlePrompt,makeRequest,actualRequest,extractText,extractJson,findScore,findIdea,sha256Text,sha256Buffer,buildMidi,extractCompactScore,extractMidiPerformanceScore,parseCompositionRepresentation});
+window.CompositionEngine=Object.freeze({name:ENGINE_NAME,version:ENGINE_VERSION,representations:REPRESENTATION_CONTRACTS,compose,analyzeScore,analyzeImprovement,improveScore,COMPOSITION_CONTRACT,TECHNICAL_CONTRACT,createPrompts,criticalAnalysisPrompt,postImprovementAnalysisPrompt,approvedImprovementPrompt,scoreToCompact,duplicateTitlePrompt,makeRequest,actualRequest,extractText,extractJson,findScore,findIdea,sha256Text,sha256Buffer,buildMidi,extractCompactScore,extractMidiPerformanceScore,abcVelocityMap,applyAbcVelocities,parseCompositionRepresentation});
 })();
