@@ -1,14 +1,14 @@
 (()=>{'use strict';
 
 const ENGINE_NAME='Composition Engine';
-const ENGINE_VERSION='2.2.3';
+const ENGINE_VERSION='2.3.0-rc.1';
 
-const TECHNICAL_CONTRACT=`TECHNISCHES FORMAT (kompakt):\nNur valides JSON.\n{\"t\":\"Titel\",\"b\":BPM,\"m\":[Z,N],\"v\":[[\"Instrument\",Program,Channel,[[Takt,Position,Dauer,Pitch,Velocity,"Notenname?"],...]],...]}\nTakt beginnt bei 1, Position bei 0. Pausen durch Lücken. Jede klingende Note des Entwurfs genau einmal ausgeben. Optionaler Notenname bewahrt die beabsichtigte Schreibweise (z. B. Db4/C#4). Keine musikalischen Änderungen.`;
+const TECHNICAL_CONTRACT=`TECHNISCHES FORMAT (kompakt):\nNur valides JSON.\n{\"t\":\"Titel\",\"b\":BPM,\"m\":[Z,N],\"v\":[[\"Instrument\",Program,Channel,[[Takt,Position,Dauer,Pitch,Velocity,"Notenname?"],...]],...]}\nTakt beginnt bei 1, Position bei 0. Pausen durch Lücken. Jede klingende Note der fertigen Komposition genau einmal ausgeben. Optionaler Notenname bewahrt die beabsichtigte Schreibweise (z. B. Db4/C#4). Keine musikalischen Änderungen.`;
 function createPrompts(snapshot,draft='',translated=''){
  return{
-  musicalDraft:'Komponiere das verlangte Stück musikalisch frei und eigenständig. Konzentriere dich ausschließlich auf musikalische Gestalt, Verlauf, Stimmen, Rhythmus, Harmonik, Artikulation und Charakter. Denke noch NICHT an MIDI-Codierung, QN-Werte, CS-Zeilen oder ein technisches Ausgabeformat. Schreibe einen vollständigen, konkret ausnotierbaren musikalischen Entwurf, aus dem anschließend eine andere technische Instanz die MIDI-Daten erzeugen kann. Gib der Komposition einen Namen. Schreibe am Anfang zwingend einen kurzen passenden Werktitel als „Titel: …“ sowie, soweit musikalisch bestimmbar, „Tonart: …“ und „Tempo: …“ als musikalische Tempoangabe (z. B. Andante, Allegro moderato) an; dies soll die musikalische Gestaltung nicht einschränken. Mache keine Erläuterung über deine Arbeitsweise.\n\nAUFTRAG:\n'+snapshot.visibleTask,
-  midiTranslation:'Übertrage den fertigen musikalischen Entwurf vollständig und unverändert in das technische Format. Keine Analyse, keine Erklärung, keine Neukomposition.\\n\\n'+draft+'\\n\\n'+TECHNICAL_CONTRACT,
-  compositionIdea:'Analysiere die bereits fertig komponierte Komposition musikalisch genau. Beschreibe anschließend das tatsächlich entstandene Werk knapp, konkret und hörbezogen: prägende melodische Gestalten, Rhythmik, Harmonik, Satz/Stimmentwicklung, Form/Entwicklung, Klangcharakter und auffällige Eigenheiten. Benenne auch schematische Wiederholungen oder geringe Entwicklung, wenn sie im Werk tatsächlich vorkommen. Keine Bewertungsskala, kein BEHALTEN/ÄNDERN, keine Neukomposition, keine Verbesserungsvorschläge und keine technischen MIDI-Metadaten. Die Beschreibung muss aus dem fertigen musikalischen Entwurf abgeleitet sein und darf keine bloße Wiederholung des Auftrags sein.\\n\\nFERTIGE KOMPOSITION:\\n'+draft
+  composition:'Komponiere jetzt das verlangte Stück vollständig. Erzeuge die Musik selbst – keinen Entwurf, keinen Formplan, kein Konzept, keine Klangbeschreibung und keine Erläuterung darüber, wie das Stück später komponiert werden könnte. Triff die musikalischen Entscheidungen unmittelbar in der Komposition: konkrete Stimmen, Tonhöhen, Dauern, Rhythmus, Harmonik, Artikulation, Dynamik und Verlauf. Die Komposition muss so vollständig und eindeutig notiert sein, dass eine nachfolgende technische Instanz sie ohne eigene musikalische Entscheidungen lediglich übertragen kann. Gib der fertigen Komposition einen kurzen Werktitel und, soweit musikalisch bestimmbar, Tonart und Tempo an. Denke nicht an MIDI-Codierung, QN-Werte, CS-Zeilen oder das technische Zielformat. Keine Analyse und keine Beschreibung der Arbeitsweise.\n\nAUFTRAG:\n'+snapshot.visibleTask,
+  midiTranslation:'Übertrage die fertige Komposition vollständig und unverändert in das technische Format. Keine Analyse, keine Erklärung, keine Neukomposition.\\n\\n'+draft+'\\n\\n'+TECHNICAL_CONTRACT,
+  compositionIdea:'Analysiere die bereits fertig komponierte Komposition musikalisch genau. Beschreibe anschließend das tatsächlich entstandene Werk knapp, konkret und hörbezogen: prägende melodische Gestalten, Rhythmik, Harmonik, Satz/Stimmentwicklung, Form/Entwicklung, Klangcharakter und auffällige Eigenheiten. Benenne auch schematische Wiederholungen oder geringe Entwicklung, wenn sie im Werk tatsächlich vorkommen. Keine Bewertungsskala, kein BEHALTEN/ÄNDERN, keine Neukomposition, keine Verbesserungsvorschläge und keine technischen MIDI-Metadaten. Die Beschreibung muss aus der fertigen Komposition abgeleitet sein und darf keine bloße Wiederholung des Auftrags sein.\\n\\nFERTIGE KOMPOSITION:\\n'+draft
  };
 }
 function duplicateTitlePrompt(title,allTitles,draft){const hint=String(draft||'').slice(0,700);return'Erfinde ausschließlich einen neuen kurzen Werktitel für die bereits fertige Komposition. Keine musikalische Änderung. Antworte nur mit dem Titel.\n\nBISHERIGER TITEL:\n'+title+'\n\nBEREITS VERWENDET:\n'+allTitles.join('\n')+'\n\nKURZER KONTEXT:\n'+hint}
@@ -38,11 +38,11 @@ async function compose({snapshot,key,repeatOf=null,seriesId=null,runId,now,reque
  const ev=(phase,data={})=>run.events.push({at:now(),phase,...data});
  ev('run_started',{note:'Keine frühere Unterhaltung oder Komposition wird an das Modell übertragen.'});
  const call=async(prompt,stage)=>requestModel({snapshot,key,promptText:prompt,stage,run,event:ev});
- const draft=await call(createPrompts(snapshot).musicalDraft,'musical_draft');if(!draft.trim())throw new Error('Der musikalische Entwurf ist leer.');run.musicalDraft=draft;
+ const draft=await call(createPrompts(snapshot).composition,'composition');if(!draft.trim())throw new Error('Die Komposition ist leer.');run.composition=draft;
  let translated=await call(createPrompts(snapshot,draft).midiTranslation,'midi_translation');
  const validJson=s=>{try{extractJson(s);return true}catch{return false}};
  if(!validJson(translated)){
-   ev('midi_translation_incomplete',{characters:translated.length,note:'Technische JSON-Übertragung unvollständig; der fertige musikalische Entwurf bleibt unverändert.'});
+   ev('midi_translation_incomplete',{characters:translated.length,note:'Technische JSON-Übertragung unvollständig; die fertige Komposition bleibt unverändert.'});
    for(let attempt=0;attempt<2&&!validJson(translated);attempt++){
      const tail=translated.slice(-2400);
      const continuation='Die technische JSON-Übertragung wurde bei der Ausgabe abgeschnitten. Setze exakt an der Abbruchstelle fort. Keine Wiederholung, keine Einleitung, keine neuen Noten und keine musikalischen Änderungen. Antworte ausschließlich mit dem unmittelbar anschließenden JSON-Text bis zum Abschluss. Letzte Zeichen der bisherigen Ausgabe:\\n'+tail;
@@ -53,7 +53,7 @@ async function compose({snapshot,key,repeatOf=null,seriesId=null,runId,now,reque
      ev('midi_translation_continued',{attempt:attempt+1,addedCharacters:addition.length-matched,totalCharacters:translated.length});
    }
  }
- if(!validJson(translated))throw new Error('Technische Partiturausgabe auch nach zwei Fortsetzungen unvollständig. Der musikalische Entwurf wurde nicht verändert.');
+ if(!validJson(translated))throw new Error('Technische Partiturausgabe auch nach zwei Fortsetzungen unvollständig. Die fertige Komposition wurde nicht verändert.');
  const obj=extractJson(translated);run.parsedModelJson=obj;ev('model_json_parsed',{stage:'midi_translation',changed:false,note:'Nur JSON geparst; keine musikalische Korrektur.'});const score=findScore(obj);run.score=score;
  const title=String(score?.title||'').trim(),allTitles=usedTitles.filter(Boolean);if(title&&allTitles.some(t=>String(t).toLocaleLowerCase('de-DE')===title.toLocaleLowerCase('de-DE'))){let nt=(await call(duplicateTitlePrompt(title,allTitles,draft),'title_renaming')).trim().replace(/^Titel:\s*/i,'').replace(/^['“”"]|['“”"]$/g,'').trim();if(!nt||allTitles.some(t=>String(t).toLocaleLowerCase('de-DE')===nt.toLocaleLowerCase('de-DE')))nt=title+' '+new Date().toLocaleDateString('de-DE');score.title=nt;ev('duplicate_title_replaced',{oldTitle:title,newTitle:nt})}
  const midiBytes=buildMidi(score),buf=midiBytes.buffer.slice(midiBytes.byteOffset,midiBytes.byteOffset+midiBytes.byteLength),midiHash=await sha256Buffer(buf);run.midi={bytes:midiBytes.byteLength,sha256:midiHash,note:'Deterministisch lokal aus den unveränderten Partiturwerten erzeugt; keine musikalische Nachbearbeitung.'};ev('midi_generated',{bytes:midiBytes.byteLength,sha256:midiHash});
