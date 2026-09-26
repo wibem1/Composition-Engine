@@ -14,7 +14,7 @@ vm.createContext(sandbox);
 vm.runInContext(source, sandbox);
 const engine = sandbox.window.CompositionEngine;
 
-assert.strictEqual(engine.version, '2.2.3');
+assert.strictEqual(engine.version, '2.3.0-rc.1');
 
 // Regression 2.2.2: JSON short decimals outside strings are accepted without altering strings.
 const shortDecimals = '{"t":"Punkt .5 bleibt Text","b":96,"m":[4,4],"v":[["Piano",0,0,[[1,0,.5,60,80],[1,.5,.25,62,80]]]]}';
@@ -39,3 +39,16 @@ assert.throws(() => engine.extractJson('{"t":"Bad","b":90,"v":[["P",0,0,[[1,0,.5
 assert.throws(() => engine.extractJson('{"t":"Bad","b":90,"v":[["P",0,0,[]]}'), e => e && e.name === 'SyntaxError');
 
 console.log('Composition Engine 2.2.3 regression tests: OK');
+
+
+// Architecture invariant: the first creative stage is the composition itself, not a pre-composition draft.
+const prompts = engine.createPrompts({visibleTask:'Erstelle ein Klavierstück.'});
+assert.ok(typeof prompts.composition === 'string' && prompts.composition.length > 0);
+assert.strictEqual(prompts.musicalDraft, undefined);
+assert.ok(prompts.composition.includes('Erzeuge die Musik selbst'));
+assert.ok(prompts.composition.includes('keinen Entwurf'));
+assert.ok(prompts.composition.includes('keinen Formplan'));
+assert.ok(prompts.midiTranslation.includes('fertige Komposition'));
+assert.ok(!prompts.midiTranslation.includes('musikalischen Entwurf'));
+
+console.log('Architecture invariant direct-composition: OK');
