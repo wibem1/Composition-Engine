@@ -14,7 +14,7 @@ vm.createContext(sandbox);
 vm.runInContext(source, sandbox);
 const engine = sandbox.window.CompositionEngine;
 
-assert.strictEqual(engine.version, '2.3.0');
+assert.strictEqual(engine.version, '2.3.1');
 
 // Regression 2.2.2: JSON short decimals outside strings are accepted without altering strings.
 const shortDecimals = '{"t":"Punkt .5 bleibt Text","b":96,"m":[4,4],"v":[["Piano",0,0,[[1,0,.5,60,80],[1,.5,.25,62,80]]]]}';
