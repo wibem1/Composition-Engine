@@ -54,9 +54,19 @@ async function compose({snapshot,key,repeatOf=null,seriesId=null,runId,now,reque
  const ev=(phase,data={})=>run.events.push({at:now(),phase,...data});
  ev('run_started',{note:'Ein einziger kreativer KI-Schritt erzeugt die vollständige symbolische Partitur. Danach keine KI-Übersetzung.'});
  const call=async(prompt,stage)=>requestModel({snapshot,key,promptText:prompt,stage,run,event:ev});
- const rawComposition=String(await call(createPrompts(snapshot).composition,'composition')||'').trim();
+ let rawComposition=String(await call(createPrompts(snapshot).composition,'composition')||'').trim();
  if(!rawComposition)throw new Error('Die Komposition ist leer.');
- let obj;try{obj=extractJson(rawComposition)}catch(e){throw new Error('Die komponierende KI hat keine vollständige gültige Partitur geliefert: '+(e?.message||String(e)))}
+ let obj;try{obj=extractJson(rawComposition)}catch(e){
+   ev('composition_json_incomplete',{message:e?.message||String(e),characters:rawComposition.length});
+   const continuationPrompt='Setze ausschließlich das unmittelbar zuvor abgeschnittene JSON exakt an der Abbruchstelle fort. Wiederhole nichts, ändere nichts und komponiere nichts neu. Gib nur die fehlenden Zeichen bis zum vollständigen Ende des JSON-Objekts aus.';
+   let completed=false,lastError=e;
+   for(let attempt=1;attempt<=2&&!completed;attempt++){
+     const tail=String(await call(continuationPrompt,'composition_continuation_'+attempt)||'').trim().replace(/^\`\`\`(?:json)?\\s*/i,'').replace(/\\s*\`\`\`$/,'');
+     rawComposition+=tail;
+     try{obj=extractJson(rawComposition);completed=true;ev('composition_json_completed',{attempt,characters:rawComposition.length})}catch(err){lastError=err}
+   }
+   if(!completed)throw new Error('Die komponierende KI hat keine vollständige gültige Partitur geliefert: '+(lastError?.message||String(lastError)));
+ }
  const score=findScore(obj);run.composition=rawComposition;run.parsedModelJson=obj;run.score=score;ev('composition_parsed',{changed:false,note:'Die kreative Ausgabe selbst ist die Partitur; keine zweite KI und keine musikalische Übersetzung.'});
  const title=String(score?.title||'').trim(),allTitles=usedTitles.filter(Boolean);if(title&&allTitles.some(t=>String(t).toLocaleLowerCase('de-DE')===title.toLocaleLowerCase('de-DE'))){let nt=(await call(duplicateTitlePrompt(title,allTitles,rawComposition),'title_renaming')).trim().replace(/^Titel:\\s*/i,'').replace(/^['“”"]|['“”"]$/g,'').trim();if(!nt||allTitles.some(t=>String(t).toLocaleLowerCase('de-DE')===nt.toLocaleLowerCase('de-DE')))nt=title+' '+new Date().toLocaleDateString('de-DE');score.title=nt;ev('duplicate_title_replaced',{oldTitle:title,newTitle:nt})}
  const midiBytes=buildMidi(score),buf=midiBytes.buffer.slice(midiBytes.byteOffset,midiBytes.byteOffset+midiBytes.byteLength),midiHash=await sha256Buffer(buf);run.midi={bytes:midiBytes.byteLength,sha256:midiHash,note:'Deterministisch lokal direkt aus der kreativen Quellpartitur erzeugt; kein KI-Übersetzungsschritt.'};ev('midi_generated',{bytes:midiBytes.byteLength,sha256:midiHash});
