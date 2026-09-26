@@ -12,7 +12,6 @@ Dieser Index ist die zentrale Orientierung für die gemeinsam entwickelten Musik
 | Composition Lab Native | wibem1/Composition-Lab-Native | 3.5.3 Build 3503 auf release/v3.5.3-engine-2.3.1 | lokaler Port 2.3.1, Build 231 | CURRENT TEST CANDIDATE. main ist ausdrücklich veraltete 6.x-Linie und darf nicht als CURRENT benutzt werden. Engine-Port-Commits u.a. 62e7d5b, f1a052c, d54a19e, 24c36bd, 01d1c97. Praktischer Test ausstehend. |
 | Composition Studio | wibem1/Composition-Studio | 1.0.3, main | lokale 2.1.0, Build 21 | CURRENT. Produktive REAPER-Runtime wurde aus dem bisherigen Reaper-Repository migriert und gegen die Quelle verglichen. |
 | Composition Studio MiniDAW | wibem1/Composition-Studio-MiniDAW-Archive | historisch | fruehere MiniDAW/MAGDA-Architektur | HISTORICAL/OBSOLETE. Nicht fuer die aktuelle REAPER-Entwicklung verwenden. |
-| Reaper Composition | wibem1/Reaper-Composition | Migrationsquelle | lokale 2.1.0, Build 21 | MIGRATION SOURCE. Bis zum Abschluss der Bereinigung nur noch Sicherungsquelle; keine neue Entwicklung dort. |
 
 ## Verbindliche Statusbegriffe
 
@@ -40,7 +39,7 @@ Bei jeder Testversion:
 
 ## Composition Studio Migration
 
-Das produktive REAPER-Script ist verifiziert und in das aktive Repository wibem1/Composition-Studio migriert. Aktueller Runtime-Stand: Composition Studio 1.0.3 mit lokaler Composition Engine 2.1.0 Build 21. Das fruehere MiniDAW-Projekt ist separat archiviert.
+Das produktive REAPER-Script ist verifiziert und in das aktive Repository wibem1/Composition-Studio migriert. Aktueller Runtime-Stand: Composition Studio 1.0.3 mit lokaler Composition Engine 2.1.0 Build 21. Das fruehere MiniDAW-Projekt ist separat archiviert. Das ehemalige Repository wibem1/Reaper-Composition wurde nach verifizierter Migration am 2026-09-26 geloescht.
 
 ## Architekturvertrag Composition Engine 2.3.1
 
