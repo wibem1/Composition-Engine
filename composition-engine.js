@@ -1,7 +1,7 @@
 (()=>{'use strict';
 
 const ENGINE_NAME='Composition Engine';
-const ENGINE_VERSION='2.9.0-representation-lab.1';
+const ENGINE_VERSION='2.9.0-representation-lab.2';
 
 const COMPOSITION_CONTRACT=`KOMPAKTES PARTITURFORMAT:\nH|["Titel",BPM,Zähler,Nenner]\nV|["Instrument",Program,Channel]\nB|Takt|[[Position,Dauer,Pitch,Velocity],...]\nDanach weitere B-Zeilen oder eine neue V-Zeile. Jede Zeile ist abgeschlossen. Takt beginnt bei 1; Position und Dauer in Viertelnoten-Einheiten. Pausen sind Lücken. Notennamen werden nicht zusätzlich ausgegeben.`
 const TECHNICAL_CONTRACT=COMPOSITION_CONTRACT;
@@ -22,7 +22,7 @@ ${COMPOSITION_CONTRACT}
 ABC:
 vollständige gültige ABC-Notation mit X:, T:, M:, L:, Q:, K: und bei Bedarf V:-Stimmen.
 MIDI:
-MIDI-PERFORMANCE-TEXT mit H|, V|, N|StartTick|DauerTicks|Pitch|Velocity und optional C|Tick|Controller|Wert; 960 PPQ.`
+MIDI-PERFORMANCE-TEXT mit H|, V|, N|StartTick|DauerTicks|Pitch|Velocity sowie optional C|Tick|Controller|Wert, T|Tick|BPM und P|Tick|Wert; 960 PPQ.`
 });
 function representationOf(snapshot){const r=String(snapshot?.representation||'compact').toLowerCase();return REPRESENTATION_CONTRACTS[r]?r:'compact'}
 function createPrompts(snapshot,composition=''){
@@ -69,16 +69,19 @@ function extractCompactScore(text){
  return{title:String(head[0]||''),bpm:Number(head[1])||120,timeSignature:ts,tracks};
 }
 function extractMidiPerformanceScore(text){
- const lines=String(text||'').trim().split(/\r?\n/).map(x=>x.trim()).filter(Boolean);let head=null,current=null,tracks=[];
- for(const line of lines){
+ const lines=String(text||'').trim().split(/\r?\n/).map(x=>x.trim()).filter(Boolean);let head=null,current=null,tracks=[],tempoEvents=[];
+ for(let i=0;i<lines.length;i++){const line=lines[i];
+  if(/^(#|;|\/\/)/.test(line)||/^\`\`\`/.test(line))continue;
   if(line.startsWith('H|')){head=JSON.parse(line.slice(2));continue}
-  if(line.startsWith('V|')){const v=JSON.parse(line.slice(2));current={name:String(v[0]||('Track '+(tracks.length+1))),program:Number(v[1])||0,channel:Number.isFinite(Number(v[2]))?Number(v[2]):tracks.length,notes:[],cc:[]};tracks.push(current);continue}
-  if(line.startsWith('N|')){if(!current)throw new Error('N-Zeile ohne V-Zeile.');const p=line.split('|').slice(1).map(Number);if(p.length<4||p.some(x=>!Number.isFinite(x)))throw new Error('Ungültige N-Zeile.');current.notes.push([p[0]/960,p[1]/960,Math.round(p[2]),Math.round(p[3])]);continue}
-  if(line.startsWith('C|')){if(!current)throw new Error('C-Zeile ohne V-Zeile.');const p=line.split('|').slice(1).map(Number);if(p.length<3||p.some(x=>!Number.isFinite(x)))throw new Error('Ungültige C-Zeile.');current.cc.push([p[0]/960,Math.round(p[1]),Math.round(p[2])]);continue}
-  throw new Error('Unbekannte MIDI-Performance-Zeile.');
+  if(line.startsWith('V|')){const v=JSON.parse(line.slice(2));current={name:String(v[0]||('Track '+(tracks.length+1))),program:Number(v[1])||0,channel:Number.isFinite(Number(v[2]))?Number(v[2]):tracks.length,notes:[],cc:[],pitchBend:[]};tracks.push(current);continue}
+  if(line.startsWith('N|')){if(!current)throw new Error('N-Zeile ohne V-Zeile.');const p=line.split('|').slice(1).map(Number);if(p.length<4||p.some(x=>!Number.isFinite(x)))throw new Error('Ungültige N-Zeile in Zeile '+(i+1)+'.');current.notes.push([p[0]/960,p[1]/960,Math.round(p[2]),Math.round(p[3])]);continue}
+  if(line.startsWith('C|')){if(!current)throw new Error('C-Zeile ohne V-Zeile.');const p=line.split('|').slice(1).map(Number);if(p.length<3||p.some(x=>!Number.isFinite(x)))throw new Error('Ungültige C-Zeile in Zeile '+(i+1)+'.');current.cc.push([p[0]/960,Math.round(p[1]),Math.round(p[2])]);continue}
+  if(line.startsWith('T|')){const p=line.split('|').slice(1).map(Number);if(p.length<2||p.some(x=>!Number.isFinite(x)))throw new Error('Ungültige T-Zeile in Zeile '+(i+1)+'.');tempoEvents.push([p[0]/960,p[1]]);continue}
+  if(line.startsWith('P|')){if(!current)throw new Error('P-Zeile ohne V-Zeile.');const p=line.split('|').slice(1).map(Number);if(p.length<2||p.some(x=>!Number.isFinite(x)))throw new Error('Ungültige P-Zeile in Zeile '+(i+1)+'.');current.pitchBend.push([p[0]/960,Math.max(-8192,Math.min(8191,Math.round(p[1])))]);continue}
+  throw new Error('Unbekannte MIDI-Performance-Zeile '+(i+1)+': '+line.slice(0,120));
  }
  if(!Array.isArray(head)||head.length<4||!tracks.length)throw new Error('Unvollständiges MIDI-Performance-Format.');
- return{title:String(head[0]||''),bpm:Number(head[1])||120,timeSignature:[Number(head[2])||4,Number(head[3])||4],tracks};
+ return{title:String(head[0]||''),bpm:Number(head[1])||120,timeSignature:[Number(head[2])||4,Number(head[3])||4],tracks,tempoEvents};
 }
 function parseCompositionRepresentation(text,representation){
  let raw=String(text||'').trim(),r=representationOf({representation});
@@ -112,7 +115,7 @@ async function compose({snapshot,key,repeatOf=null,seriesId=null,runId,now,reque
  let rawComposition=String(await call(createPrompts(snapshot).composition,'composition')||'').trim();
  if(!rawComposition)throw new Error('Die Komposition ist leer.');
  let score,obj=null,parsedFormat='';try{const parsed=parseCompositionRepresentation(rawComposition,representationOf(snapshot));score=parsed.score;obj=parsed.obj||null;parsedFormat=parsed.format}catch(e){
-   ev('composition_format_invalid',{message:e?.message||String(e),characters:rawComposition.length});
+   run.composition=rawComposition;run.rawCompositionOnError=rawComposition;ev('composition_format_invalid',{message:e?.message||String(e),characters:rawComposition.length,rawComposition});
    throw new Error('Die komponierende KI hat keine vollständig lesbare Partitur geliefert: '+(e?.message||String(e)));
  }
  run.composition=rawComposition;run.parsedModelJson=obj;run.score=score;run.representation={requested:representationOf(snapshot),parsed:parsedFormat};ev('composition_parsed',{changed:false,representation:parsedFormat,note:'Die kreative Ausgabe selbst ist die Partitur; keine zweite KI und keine musikalische Übersetzung.'});
