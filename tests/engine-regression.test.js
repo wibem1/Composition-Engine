@@ -4,7 +4,7 @@ const sandbox={window:{},crypto:require('crypto').webcrypto,TextEncoder,structur
 sandbox.globalThis=sandbox.window;
 vm.createContext(sandbox);vm.runInContext(source,sandbox);
 const engine=sandbox.window.CompositionEngine;
-assert.strictEqual(engine.version,'2.9.0');
+assert.strictEqual(engine.version,'2.9.1');
 assert.ok(engine.representations.compact&&engine.representations.abc&&engine.representations.midi&&engine.representations.free);
 
 const compact='H|["Test",96,4,4]\nV|["Piano",0,0]\nB|1|[[0,1,60,72],[1,1,64,76]]';
@@ -18,6 +18,12 @@ assert.strictEqual(m.format,'midi');assert.strictEqual(m.score.tracks[0].notes[0
 const free=engine.parseCompositionRepresentation('FORMAT|MIDI\n'+midi,'free');
 assert.strictEqual(free.format,'midi');
 
+
+const dyn=engine.abcVelocityMap('!mf! C D E F !diminuendo(! G A B c !diminuendo)! d e f g !f! a b');
+assert.ok(Math.min(...dyn)>=28,'ABC dynamics must not run away below ppp');
+assert.ok(dyn.slice(4,8)[0]>dyn.slice(4,8)[3],'diminuendo hairpin must descend');
+assert.strictEqual(dyn[dyn.length-2],94,'explicit forte must reset the dynamic level');
+
 const pABC=engine.createPrompts({visibleTask:'Test',representation:'abc'}).composition;
 const pMIDI=engine.createPrompts({visibleTask:'Test',representation:'midi'}).composition;
 const pFree=engine.createPrompts({visibleTask:'Test',representation:'free'}).composition;
@@ -25,4 +31,4 @@ assert.ok(pABC.includes('ABC-NOTATION'));assert.ok(pMIDI.includes('960 PPQ'));as
 assert.strictEqual(typeof engine.analyzeScore,'function');assert.strictEqual(typeof engine.improveScore,'function');
 assert.ok(source.includes("contextMode:'single-creative-source'"));assert.ok(!source.includes("'midi_translation'"));
 assert.ok(source.includes("const analysisSource=(parsedFormat==='abc'||parsedFormat==='midi'||parsedFormat==='compact')?rawComposition:JSON.stringify(scoreToCompact(score));"));
-console.log('Composition Engine 2.9.0 regression tests: OK');
+console.log('Composition Engine 2.9.1 regression tests: OK');
