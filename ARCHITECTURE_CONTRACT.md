@@ -25,6 +25,9 @@ Dieser Vertrag ist vor jeder Änderung und vor jeder Freigabe gegen den tatsäch
 7. **Experimente ändern den stabilen Pfad nicht stillschweigend.**
    Neue Architekturideen werden getrennt entwickelt und getestet. Der zentrale stabile Entry-Point wird erst nach nachgewiesener technischer Prüfung und bewusstem musikalischem Hörtest ersetzt.
 
+8. **Die Kompositionsbeschreibung hat einen verbindlichen Pflichtkopf und bleibt kurz.**
+   Jede für den Nutzer angezeigte Kompositionsbeschreibung enthält sichtbar und in dieser Reihenfolge mindestens: **Taktzahl, BPM, Tonart, Tokenverbrauch und Kostenschätzung**. Danach folgt nur eine kurze, konkrete, hörbezogene Werkbeschreibung. Die ausführliche interne Analyse darf für Diagnosezwecke erhalten bleiben, ist aber nicht die normale Nutzerbeschreibung. Fehlt eine musikalische Angabe tatsächlich, wird sie als nicht bestimmt gekennzeichnet und nicht erfunden. Tokenverbrauch wird aus den tatsächlich protokollierten Provider-Usage-Daten gebildet; die Kosten werden als **Schätzung** anhand der für den verwendeten Provider/das verwendete Modell hinterlegten Preise ausgewiesen und dürfen nicht als exakte Abrechnung bezeichnet werden.
+
 ## Pflichtprüfung vor Freigabe
 
 - Dokumentation ↔ Runtime-Code ↔ tatsächlich versendete Prompts stimmen überein.
@@ -33,6 +36,7 @@ Dieser Vertrag ist vor jeder Änderung und vor jeder Freigabe gegen den tatsäch
 - Versions- und Manifestangaben stimmen überein.
 - Reale Diagnose zeigt als ersten kreativen Provider-Aufruf die **Komposition**.
 - Ein Hörtest prüft die musikalische Qualität. Ein grüner Build allein ist keine musikalische Freigabe.
+- Die Nutzerbeschreibung enthält Taktzahl, BPM, Tonart, Tokens und Kostenschätzung und ist gegenüber der internen Analyse deutlich gekürzt.
 
 ## Änderungsregel
 
