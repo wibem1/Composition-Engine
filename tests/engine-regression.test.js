@@ -14,7 +14,7 @@ vm.createContext(sandbox);
 vm.runInContext(source, sandbox);
 const engine = sandbox.window.CompositionEngine;
 
-assert.strictEqual(engine.version, '2.4.0');
+assert.strictEqual(engine.version, '2.4.1');
 
 // Regression 2.2.2: JSON short decimals outside strings are accepted without altering strings.
 const shortDecimals = '{"t":"Punkt .5 bleibt Text","b":96,"m":[4,4],"v":[["Piano",0,0,[[1,0,.5,60,80],[1,.5,.25,62,80]]]]}';
@@ -69,3 +69,12 @@ assert.strictEqual(openaiTechnical.body.reasoning.effort,'low');
 const geminiTechnical = engine.makeRequest('google','gemini-3.8-flash','x','approved_score_improvement');
 assert.strictEqual(geminiTechnical.body.generationConfig.thinkingConfig.thinkingLevel,'low');
 console.log('Engine 2.4.0 analysis/improvement capability: OK');
+
+// Engine 2.4.1: every improved version can be assessed as the current version.
+assert.strictEqual(typeof engine.analyzeImprovement, 'function');
+assert.strictEqual(typeof engine.postImprovementAnalysisPrompt, 'function');
+const postPrompt=engine.postImprovementAnalysisPrompt({title:'Original',bpm:80,timeSignature:[4,4],tracks:[]},{title:'Verbessert',bpm:80,timeSignature:[4,4],tracks:[]},'URTEIL: ÄNDERN\\nBegleitung variieren.');
+assert.ok(postPrompt.includes('AKTUELLE VERBESSERTE FASSUNG'));
+assert.ok(postPrompt.includes('zuvor beanstandete hörbare Schwäche tatsächlich beseitigt'));
+assert.ok(postPrompt.includes('neue musikalische Schwächen'));
+console.log('Engine 2.4.1 post-improvement analysis capability: OK');
