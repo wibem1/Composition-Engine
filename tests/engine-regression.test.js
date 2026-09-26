@@ -33,9 +33,9 @@ assert.strictEqual(repaired.v[0][3].length, 1);
 assert.strictEqual(repaired.v[1][3].length, 1);
 
 // Truncated musical data must not be silently repaired.
-assert.throws(() => engine.extractJson('{"t":"Bad","b":90,"v":[["P",0,0,[[1,0,.5,60,80]'), SyntaxError);
+assert.throws(() => engine.extractJson('{"t":"Bad","b":90,"v":[["P",0,0,[[1,0,.5,60,80]'), e => e && e.name === 'SyntaxError');
 
 // A score with an empty voice must not pass the special closing repair.
-assert.throws(() => engine.extractJson('{"t":"Bad","b":90,"v":[["P",0,0,[]]}'), SyntaxError);
+assert.throws(() => engine.extractJson('{"t":"Bad","b":90,"v":[["P",0,0,[]]}'), e => e && e.name === 'SyntaxError');
 
 console.log('Composition Engine 2.2.3 regression tests: OK');
