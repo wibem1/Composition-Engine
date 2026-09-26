@@ -14,7 +14,7 @@ vm.createContext(sandbox);
 vm.runInContext(source, sandbox);
 const engine = sandbox.window.CompositionEngine;
 
-assert.strictEqual(engine.version, '2.5.0');
+assert.strictEqual(engine.version, '2.7.0-candidate');
 
 // Regression 2.2.2: JSON short decimals outside strings are accepted without altering strings.
 const shortDecimals = '{"t":"Punkt .5 bleibt Text","b":96,"m":[4,4],"v":[["Piano",0,0,[[1,0,.5,60,80],[1,.5,.25,62,80]]]]}';
@@ -45,13 +45,15 @@ console.log('Composition Engine 2.2.3 regression tests: OK');
 const prompts = engine.createPrompts({visibleTask:'Erstelle ein Klavierstück.'});
 assert.ok(typeof prompts.composition === 'string' && prompts.composition.length > 0);
 assert.strictEqual(prompts.musicalDraft, undefined);
-assert.ok(prompts.composition.includes('Erzeuge die Musik selbst'));
-assert.ok(prompts.composition.includes('keinen Entwurf'));
-assert.ok(prompts.composition.includes('keinen Formplan'));
-assert.ok(prompts.midiTranslation.includes('fertige Komposition'));
-assert.ok(!prompts.midiTranslation.includes('musikalischen Entwurf'));
+assert.ok(prompts.composition.includes('fertige Komposition direkt'));
+assert.ok(prompts.composition.includes('KEINE zweite KI'));
+assert.ok(prompts.composition.includes('praktisch spielbar'));
+assert.strictEqual(prompts.midiTranslation, undefined);
+assert.ok(engine.COMPOSITION_CONTRACT.includes('musikalische Quelle der Wahrheit'));
 
 console.log('Architecture invariant direct-composition: OK');
+assert.ok(source.includes("contextMode:'single-creative-source'"));
+assert.ok(!source.includes("'midi_translation'"));
 
 // Engine 2.4.0: analysis/improvement are general engine capabilities.
 assert.strictEqual(typeof engine.analyzeScore, 'function');
