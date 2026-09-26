@@ -1,9 +1,9 @@
 (()=>{'use strict';
 
 const ENGINE_NAME='Composition Engine';
-const ENGINE_VERSION='2.7.5';
+const ENGINE_VERSION='2.8.0';
 
-const COMPOSITION_CONTRACT=`VERBINDLICHES KOMPOSITIONSFORMAT (musikalische Quelle der Wahrheit):\nNur valides JSON.\n{"t":"Titel","b":BPM,"m":[Z,N],"v":[["Instrument",Program,Channel,[[Takt,Position,Dauer,Pitch,Velocity,"Notenname?"],...]],...]}\nTakt beginnt bei 1, Position bei 0; Position und Dauer sind in Viertelnoten-Einheiten innerhalb des Takts angegeben. Pausen entstehen ausschließlich durch bewusst gesetzte Lücken. Jede klingende Note der Komposition steht genau einmal in diesem Objekt. Dieses Objekt IST die fertige Komposition; eine spätere Instanz darf keine Noten ergänzen oder musikalisch interpretieren.`;
+const COMPOSITION_CONTRACT=`KOMPAKTES PARTITURFORMAT:\nH|["Titel",BPM,Zähler,Nenner]\nV|["Instrument",Program,Channel]\nB|Takt|[[Position,Dauer,Pitch,Velocity],...]\nDanach weitere B-Zeilen oder eine neue V-Zeile. Jede Zeile ist abgeschlossen. Takt beginnt bei 1; Position und Dauer in Viertelnoten-Einheiten. Pausen sind Lücken. Notennamen werden nicht zusätzlich ausgegeben.`
 const TECHNICAL_CONTRACT=COMPOSITION_CONTRACT;
 function createPrompts(snapshot,composition=''){
  return{
@@ -33,6 +33,20 @@ function actualRequest(s,key){const headers={...s.headers};let url=s.url;for(con
 function extractText(p,j){if(p==='openai'){if(typeof j.output_text==='string')return j.output_text;const parts=[];for(const item of(j.output||[]))for(const c of(item.content||[]))if(typeof c.text==='string')parts.push(c.text);return parts.join('\n')}if(p==='anthropic')return(j.content||[]).filter(x=>x.type==='text').map(x=>x.text||'').join('\n');return(j.candidates||[]).flatMap(c=>c.content?.parts||[]).map(p=>p.text||'').join('\n')}
 function normalizeJsonNumbers(s){let out='',quoted=false,escaped=false;for(let i=0;i<s.length;i++){const c=s[i];if(quoted){out+=c;if(escaped)escaped=false;else if(c==='\\')escaped=true;else if(c==='"')quoted=false;continue}if(c==='"'){quoted=true;out+=c;continue}if(c==='.'&&/[0-9]/.test(s[i+1]||'')&&(/[\[:,\[]/.test(s.slice(0,i).trimEnd().slice(-1))||(/[\[:,\[]/.test(s.slice(0,i).trimEnd().slice(-2,-1))&&s[i-1]==='-'))){out+='0'+c;continue}out+=c}return out}
 function closeCompleteScoreJson(s){if(!s.endsWith('}'))return null;let stack=[],quoted=false,escaped=false;for(let i=0;i<s.length;i++){const c=s[i];if(quoted){if(escaped)escaped=false;else if(c==='\\')escaped=true;else if(c==='"')quoted=false;continue}if(c==='"'){quoted=true;continue}if(c==='{'||c==='['){stack.push(c);continue}if(c==='}'||c===']'){const top=stack[stack.length-1];if((top==='{'&&c==='}')||(top==='['&&c===']')){stack.pop();continue}if(i===s.length-1&&c==='}'&&top==='['&&stack[0]==='{'&&stack.slice(1).every(x=>x==='[')){const candidate=s.slice(0,-1)+']'.repeat(stack.length-1)+'}';try{const obj=JSON.parse(normalizeJsonNumbers(candidate));if(Array.isArray(obj.v)&&obj.v.length>0&&obj.v.every(v=>Array.isArray(v)&&Array.isArray(v[3])&&v[3].length>0))return candidate}catch(_){} }return null}}return null}
+function extractCompactScore(text){
+ const lines=String(text||'').trim().split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+ let head=null,current=null,tracks=[];
+ for(const line of lines){
+  if(line.startsWith('H|')){const h=JSON.parse(line.slice(2));if(!Array.isArray(h)||h.length<4)throw new Error('Ungültige H-Zeile.');head=h;continue}
+  if(line.startsWith('V|')){const v=JSON.parse(line.slice(2));if(!Array.isArray(v)||v.length<3)throw new Error('Ungültige V-Zeile.');current={name:String(v[0]||('Track '+(tracks.length+1))),program:Number(v[1])||0,channel:Number.isFinite(Number(v[2]))?Number(v[2]):tracks.length,notes:[]};tracks.push(current);continue}
+  if(line.startsWith('B|')){if(!current)throw new Error('B-Zeile ohne V-Zeile.');const p=line.indexOf('|',2),bar=Number(line.slice(2,p)),events=JSON.parse(line.slice(p+1));if(!Number.isInteger(bar)||bar<1||!Array.isArray(events))throw new Error('Ungültige B-Zeile.');current._bars=current._bars||[];current._bars.push([bar,events]);continue}
+  throw new Error('Unbekannte Partiturzeile.');
+ }
+ if(!head||!tracks.length)throw new Error('Unvollständiges kompaktes Partiturformat.');
+ const ts=[Number(head[2])||4,Number(head[3])||4],beats=ts[0]*(4/ts[1]);
+ for(const tr of tracks){for(const [bar,events] of(tr._bars||[]))for(const e of events){if(!Array.isArray(e)||e.length<4)throw new Error('Ungültiges Notenereignis.');const pos=Number(e[0]),du=Number(e[1]),pi=Number(e[2]),ve=Number(e[3]);if(!Number.isFinite(pos)||pos<0||!Number.isFinite(du)||du<=0||!Number.isInteger(pi)||pi<0||pi>127||!Number.isInteger(ve)||ve<1||ve>127)throw new Error('Ungültiges Notenereignis.');tr.notes.push([(bar-1)*beats+pos,du,pi,ve])}delete tr._bars}
+ return{title:String(head[0]||''),bpm:Number(head[1])||120,timeSignature:ts,tracks};
+}
 function extractJson(text){let s=String(text||'').trim().replace(/^\`\`\`(?:json)?\s*/i,'').replace(/\s*\`\`\`$/,'').trim();const parse=x=>JSON.parse(normalizeJsonNumbers(x));try{return parse(s)}catch(_){const closed=closeCompleteScoreJson(s);if(closed)return parse(closed);const a=s.indexOf('{'),b=s.lastIndexOf('}');if(a>=0&&b>a)return parse(s.slice(a,b+1));throw _}}
 function findScore(o){
  if(o&&Array.isArray(o.v)&&Number.isFinite(Number(o.b))){const ts=Array.isArray(o.m)?o.m:[4,4],beats=(Number(ts[0])||4)*(4/(Number(ts[1])||4));return{title:String(o.t||''),bpm:Number(o.b),timeSignature:ts,tracks:o.v.map((v,i)=>({name:String(v?.[0]||('Track '+(i+1))),program:Number(v?.[1])||0,channel:Number.isFinite(Number(v?.[2]))?Number(v[2]):i,notes:(Array.isArray(v?.[3])?v[3]:[]).map(e=>{if(!Array.isArray(e)||e.length<5)throw new Error('Ungültiges kompaktes Notenereignis.');const bar=Number(e[0]),pos=Number(e[1]),du=Number(e[2]),pi=Number(e[3]),ve=Number(e[4]);if(!Number.isInteger(bar)||bar<1||!Number.isFinite(pos)||pos<0||!Number.isFinite(du)||du<=0||!Number.isInteger(pi)||pi<0||pi>127||!Number.isInteger(ve)||ve<1||ve>127)throw new Error('Ungültiges kompaktes Notenereignis.');return[(bar-1)*beats+pos,du,pi,ve,typeof e[5]==='string'?e[5]:undefined]})}))}}
@@ -56,16 +70,16 @@ async function compose({snapshot,key,repeatOf=null,seriesId=null,runId,now,reque
  const call=async(prompt,stage)=>requestModel({snapshot,key,promptText:prompt,stage,run,event:ev});
  let rawComposition=String(await call(createPrompts(snapshot).composition,'composition')||'').trim();
  if(!rawComposition)throw new Error('Die Komposition ist leer.');
- let obj;try{obj=extractJson(rawComposition)}catch(e){
-   ev('composition_json_invalid',{message:e?.message||String(e),characters:rawComposition.length});
-   throw new Error('Die komponierende KI hat keine vollständige gültige Partitur geliefert: '+(e?.message||String(e)));
+ let score,obj=null;try{if(/^\s*H\|/.test(rawComposition))score=extractCompactScore(rawComposition);else{obj=extractJson(rawComposition);score=findScore(obj)}}catch(e){
+   ev('composition_format_invalid',{message:e?.message||String(e),characters:rawComposition.length});
+   throw new Error('Die komponierende KI hat keine vollständig lesbare Partitur geliefert: '+(e?.message||String(e)));
  }
- const score=findScore(obj);run.composition=rawComposition;run.parsedModelJson=obj;run.score=score;ev('composition_parsed',{changed:false,note:'Die kreative Ausgabe selbst ist die Partitur; keine zweite KI und keine musikalische Übersetzung.'});
+ run.composition=rawComposition;run.parsedModelJson=obj;run.score=score;ev('composition_parsed',{changed:false,note:'Die kreative Ausgabe selbst ist die Partitur; keine zweite KI und keine musikalische Übersetzung.'});
  const title=String(score?.title||'').trim(),allTitles=usedTitles.filter(Boolean);if(title&&allTitles.some(t=>String(t).toLocaleLowerCase('de-DE')===title.toLocaleLowerCase('de-DE'))){let nt=(await call(duplicateTitlePrompt(title,allTitles,rawComposition),'title_renaming')).trim().replace(/^Titel:\\s*/i,'').replace(/^['“”"]|['“”"]$/g,'').trim();if(!nt||allTitles.some(t=>String(t).toLocaleLowerCase('de-DE')===nt.toLocaleLowerCase('de-DE')))nt=title+' '+new Date().toLocaleDateString('de-DE');score.title=nt;ev('duplicate_title_replaced',{oldTitle:title,newTitle:nt})}
  const midiBytes=buildMidi(score),buf=midiBytes.buffer.slice(midiBytes.byteOffset,midiBytes.byteOffset+midiBytes.byteLength),midiHash=await sha256Buffer(buf);run.midi={bytes:midiBytes.byteLength,sha256:midiHash,note:'Deterministisch lokal direkt aus der kreativen Quellpartitur erzeugt; kein KI-Übersetzungsschritt.'};ev('midi_generated',{bytes:midiBytes.byteLength,sha256:midiHash});
  let idea='';try{idea=String(await call(createPrompts(snapshot,JSON.stringify(scoreToCompact(score))).compositionIdea,'composition_analysis_afterwards')||'').trim()}catch(e){ev('composition_analysis_failed',{message:e?.message||String(e)})}run.idea=idea;run.profile=compositionProfile(snapshot,score,'',idea);ev('composition_profile_created',{bpm:run.profile.bpm,tempo:run.profile.tempo,key:run.profile.key,barCount:run.profile.barCount,provider:run.profile.provider,model:run.profile.model});run.completedAt=now();run.status='ok';
  return{run,midiBytes};
 }
 
-window.CompositionEngine=Object.freeze({name:ENGINE_NAME,version:ENGINE_VERSION,compose,analyzeScore,analyzeImprovement,improveScore,COMPOSITION_CONTRACT,TECHNICAL_CONTRACT,createPrompts,criticalAnalysisPrompt,postImprovementAnalysisPrompt,approvedImprovementPrompt,scoreToCompact,duplicateTitlePrompt,makeRequest,actualRequest,extractText,extractJson,findScore,findIdea,sha256Text,sha256Buffer,buildMidi});
+window.CompositionEngine=Object.freeze({name:ENGINE_NAME,version:ENGINE_VERSION,compose,analyzeScore,analyzeImprovement,improveScore,COMPOSITION_CONTRACT,TECHNICAL_CONTRACT,createPrompts,criticalAnalysisPrompt,postImprovementAnalysisPrompt,approvedImprovementPrompt,scoreToCompact,duplicateTitlePrompt,makeRequest,actualRequest,extractText,extractJson,findScore,findIdea,sha256Text,sha256Buffer,buildMidi,extractCompactScore});
 })();
