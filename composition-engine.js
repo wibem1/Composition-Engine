@@ -1,13 +1,13 @@
 (()=>{'use strict';
 
 const ENGINE_NAME='Composition Engine';
-const ENGINE_VERSION='2.7.2';
+const ENGINE_VERSION='2.7.3';
 
 const COMPOSITION_CONTRACT=`VERBINDLICHES KOMPOSITIONSFORMAT (musikalische Quelle der Wahrheit):\nNur valides JSON.\n{"t":"Titel","b":BPM,"m":[Z,N],"v":[["Instrument",Program,Channel,[[Takt,Position,Dauer,Pitch,Velocity,"Notenname?"],...]],...]}\nTakt beginnt bei 1, Position bei 0; Position und Dauer sind in Viertelnoten-Einheiten innerhalb des Takts angegeben. Pausen entstehen ausschließlich durch bewusst gesetzte Lücken. Jede klingende Note der Komposition steht genau einmal in diesem Objekt. Dieses Objekt IST die fertige Komposition; eine spätere Instanz darf keine Noten ergänzen oder musikalisch interpretieren.`;
 const TECHNICAL_CONTRACT=COMPOSITION_CONTRACT;
 function createPrompts(snapshot,composition=''){
  return{
-  composition:'Komponiere jetzt das verlangte Stück vollständig und gib die fertige Komposition direkt im verbindlichen KOMPOSITIONSFORMAT aus. Dieses JSON ist die musikalische Quelle der Wahrheit, kein Entwurf und keine technische Übersetzung. Triff deshalb jetzt selbst sämtliche musikalischen Entscheidungen: jede Stimme, jede Tonhöhe, jeder Einsatz, jede Dauer, jede beabsichtigte Pause, Rhythmus, Harmonik und Dynamik/Anschlagsstärke. Es gibt danach KEINE zweite KI, die unbestimmte musikalische Angaben auslegt oder ergänzt. Schreibe keine Prosa, keinen Formplan und keine Beschreibung. Achte darauf, dass das Ergebnis musikalisch und instrumental plausibel sowie im verlangten Tempo praktisch spielbar ist.\\n\\nAUFTRAG:\\n'+snapshot.visibleTask+'\\n\\n'+COMPOSITION_CONTRACT,
+  composition:'AUFTRAG:\\n'+snapshot.visibleTask+'\\n\\nGib die fertige Komposition ausschließlich in diesem technischen Ausgabeformat aus:\\n'+COMPOSITION_CONTRACT,
   compositionIdea:'Beschreibe die bereits fertig komponierte Partitur konkret, differenziert und hörbezogen. Erfasse nur Eigenschaften, die aus der tatsächlichen Partitur hervorgehen. Etwa 500 bis 900 Zeichen, höchstens 900 Zeichen. Keine Bewertung, keine Verbesserungsvorschläge und keine Wiederholung des Auftrags.\\n\\nFERTIGE PARTITUR:\\n'+composition
  };
 }
