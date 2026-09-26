@@ -60,3 +60,9 @@
 - Reproduziert mit MusicChat-Diagnose 06:23:38: Die zweite MIDI-Antwort enthielt 447 Noten in zwei Stimmen, war vollständig, nutzte jedoch JSON-ungültige Kurzdezimalzahlen wie `.5`. Der bisherige Parser hielt dies für Abschneiden und forderte unnötig eine leere Fortsetzung an.
 - `extractJson` ergänzt fehlende führende Nullen ausschließlich außerhalb von Zeichenketten, bevor JSON geparst wird; der musikalische Inhalt bleibt erhalten. Der erste Diagnosedurchlauf war tatsächlich unvollständig und wird weiterhin als solcher behandelt.
 - Reproduktion mit der protokollierten zweiten Antwort erfolgreich; Live-Provider- und Browser-Test ausstehend.
+
+
+## 2.2.3 (2026-09-26)
+- MusicChat-Diagnose 06:35:12: HTTP 200 für alle drei OpenAI-Aufrufe. MIDI-Antwort mit 221 RH- und 216 LH-Noten endete mit einer fehlenden schließenden Klammer der äußeren `v`-Liste; mit genau dieser Klammer ist das JSON gültig.
+- Parser schließt nur eine nachweislich vollständige, am letzten `}` fehlende äußere JSON-Array-Klammer, wenn danach die komplette Partitur einschließlich aller Stimmen und Noten syntaktisch geprüft werden kann. Keine Notenänderungen. Sonst bleibt der bestehende Fortsetzungs-/Fehlerpfad aktiv.
+- GitHub- und echter Browser-Kompositionstest sind eigenständige Freigabeschritte.
