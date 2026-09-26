@@ -1,13 +1,34 @@
 (()=>{'use strict';
 
 const ENGINE_NAME='Composition Engine';
-const ENGINE_VERSION='2.8.0';
+const ENGINE_VERSION='2.9.0';
 
 const COMPOSITION_CONTRACT=`KOMPAKTES PARTITURFORMAT:\nH|["Titel",BPM,Zähler,Nenner]\nV|["Instrument",Program,Channel]\nB|Takt|[[Position,Dauer,Pitch,Velocity],...]\nDanach weitere B-Zeilen oder eine neue V-Zeile. Jede Zeile ist abgeschlossen. Takt beginnt bei 1; Position und Dauer in Viertelnoten-Einheiten. Pausen sind Lücken. Notennamen werden nicht zusätzlich ausgegeben.`
 const TECHNICAL_CONTRACT=COMPOSITION_CONTRACT;
+const REPRESENTATION_CONTRACTS=Object.freeze({
+ compact:COMPOSITION_CONTRACT,
+ abc:`ABC-NOTATION:
+Gib ausschließlich vollständige, gültige ABC-Notation aus. Verwende X:, T:, M:, L:, Q: und K:. Mehrstimmigkeit mit V:-Stimmen. Keine Erklärung außerhalb der ABC-Notation.`,
+ midi:`MIDI-PERFORMANCE-TEXT (960 PPQ):
+H|["Titel",BPM,Zähler,Nenner]
+V|["Instrument",Program,Channel]
+N|StartTick|DauerTicks|Pitch|Velocity
+Optional: C|Tick|Controller|Wert
+Danach weitere N-/C-Zeilen oder eine neue V-Zeile. StartTick und Dauer sind frei auf 960 Ticks pro Viertelnote aufgelöst; keine Quantisierung auf Notenwerte.`,
+ free:`Wähle selbst diejenige der drei Repräsentationen, in der du diese Musik am besten komponieren kannst: COMPACT, ABC oder MIDI.
+Beginne exakt mit FORMAT|COMPACT, FORMAT|ABC oder FORMAT|MIDI und gib danach ausschließlich die vollständige Komposition im gewählten Format aus.
+COMPACT:
+${COMPOSITION_CONTRACT}
+ABC:
+vollständige gültige ABC-Notation mit X:, T:, M:, L:, Q:, K: und bei Bedarf V:-Stimmen.
+MIDI:
+MIDI-PERFORMANCE-TEXT mit H|, V|, N|StartTick|DauerTicks|Pitch|Velocity sowie optional C|Tick|Controller|Wert, T|Tick|BPM und P|Tick|Wert; 960 PPQ.`
+});
+function representationOf(snapshot){const r=String(snapshot?.representation||'compact').toLowerCase();return REPRESENTATION_CONTRACTS[r]?r:'compact'}
 function createPrompts(snapshot,composition=''){
+ const representation=representationOf(snapshot),contract=REPRESENTATION_CONTRACTS[representation];
  return{
-  composition:'AUFTRAG:\n'+snapshot.visibleTask+'\n\nGib die fertige Komposition vollständig und syntaktisch abgeschlossen ausschließlich in diesem technischen Ausgabeformat aus:\n'+COMPOSITION_CONTRACT,
+  composition:'AUFTRAG:\n'+snapshot.visibleTask+'\n\nGib die fertige Komposition vollständig und syntaktisch abgeschlossen ausschließlich in diesem technischen Ausgabeformat aus:\n'+contract,
   compositionIdea:'Beschreibe die bereits fertig komponierte Partitur konkret, differenziert und hörbezogen. Erfasse nur Eigenschaften, die aus der tatsächlichen Partitur hervorgehen. Etwa 500 bis 900 Zeichen, höchstens 900 Zeichen. Keine Bewertung, keine Verbesserungsvorschläge und keine Wiederholung des Auftrags.\\n\\nFERTIGE PARTITUR:\\n'+composition
  };
 }
@@ -47,6 +68,58 @@ function extractCompactScore(text){
  for(const tr of tracks){for(const [bar,events] of(tr._bars||[]))for(const e of events){if(!Array.isArray(e)||e.length<4)throw new Error('Ungültiges Notenereignis.');const pos=Number(e[0]),du=Number(e[1]),pi=Number(e[2]),ve=Number(e[3]);if(!Number.isFinite(pos)||pos<0||!Number.isFinite(du)||du<=0||!Number.isInteger(pi)||pi<0||pi>127||!Number.isInteger(ve)||ve<1||ve>127)throw new Error('Ungültiges Notenereignis.');tr.notes.push([(bar-1)*beats+pos,du,pi,ve])}delete tr._bars}
  return{title:String(head[0]||''),bpm:Number(head[1])||120,timeSignature:ts,tracks};
 }
+function extractMidiPerformanceScore(text){
+ const lines=String(text||'').trim().split(/\r?\n/).map(x=>x.trim()).filter(Boolean);let head=null,current=null,tracks=[],tempoEvents=[];
+ for(let i=0;i<lines.length;i++){const line=lines[i];
+  if(/^(#|;|\/\/)/.test(line)||/^\`\`\`/.test(line))continue;
+  if(line.startsWith('H|')){head=JSON.parse(line.slice(2));continue}
+  if(line.startsWith('V|')){const v=JSON.parse(line.slice(2));current={name:String(v[0]||('Track '+(tracks.length+1))),program:Number(v[1])||0,channel:Number.isFinite(Number(v[2]))?Number(v[2]):tracks.length,notes:[],cc:[],pitchBend:[]};tracks.push(current);continue}
+  if(line.startsWith('N|')){if(!current)throw new Error('N-Zeile ohne V-Zeile.');const p=line.split('|').slice(1).map(Number);if(p.length<4||p.some(x=>!Number.isFinite(x)))throw new Error('Ungültige N-Zeile in Zeile '+(i+1)+'.');current.notes.push([p[0]/960,p[1]/960,Math.round(p[2]),Math.round(p[3])]);continue}
+  if(line.startsWith('C|')){if(!current)throw new Error('C-Zeile ohne V-Zeile.');const p=line.split('|').slice(1).map(Number);if(p.length<3||p.some(x=>!Number.isFinite(x)))throw new Error('Ungültige C-Zeile in Zeile '+(i+1)+'.');current.cc.push([p[0]/960,Math.round(p[1]),Math.round(p[2])]);continue}
+  if(line.startsWith('T|')){const p=line.split('|').slice(1).map(Number);if(p.length<2||p.some(x=>!Number.isFinite(x)))throw new Error('Ungültige T-Zeile in Zeile '+(i+1)+'.');tempoEvents.push([p[0]/960,p[1]]);continue}
+  if(line.startsWith('P|')){if(!current)throw new Error('P-Zeile ohne V-Zeile.');const p=line.split('|').slice(1).map(Number);if(p.length<2||p.some(x=>!Number.isFinite(x)))throw new Error('Ungültige P-Zeile in Zeile '+(i+1)+'.');current.pitchBend.push([p[0]/960,Math.max(-8192,Math.min(8191,Math.round(p[1])))]);continue}
+  throw new Error('Unbekannte MIDI-Performance-Zeile '+(i+1)+': '+line.slice(0,120));
+ }
+ if(!Array.isArray(head)||head.length<4||!tracks.length)throw new Error('Unvollständiges MIDI-Performance-Format.');
+ return{title:String(head[0]||''),bpm:Number(head[1])||120,timeSignature:[Number(head[2])||4,Number(head[3])||4],tracks,tempoEvents};
+}
+function abcVelocityMap(raw){
+ const marks={ppp:28,pp:38,p:50,mp:62,mf:78,f:94,ff:110,fff:122,sfz:118,ffz:122,fp:92};
+ let velocity=78,pendingAccent=false,cresc=0;
+ const events=[];
+ const tokenRe=/!([^!]+)!|\+([^+]+)\+|\[V:[^\]]+\]|(?:\^\^|__|\^|_|=)?[A-Ga-g][,']*\d*(?:\/\d*|\/)?|[<>]/g;
+ let m;while((m=tokenRe.exec(String(raw||'')))){
+  const deco=String(m[1]||m[2]||'').toLowerCase().trim();
+  if(deco){
+   if(Object.prototype.hasOwnProperty.call(marks,deco)){velocity=marks[deco];cresc=0;continue}
+   if(/^(crescendo|cresc\.?|<)$/.test(deco)){cresc=1;continue}
+   if(/^(diminuendo|dim\.?|decresc\.?|>)$/.test(deco)){cresc=-1;continue}
+   if(/^(accent|sf|sff|sfz|sforzando|marcato|>)$/.test(deco)){pendingAccent=true;continue}
+   if(/^(endcrescendo|enddiminuendo|enddim|enddecrescendo)$/.test(deco)){cresc=0;continue}
+  }
+  if(m[0]==='<'){cresc=1;continue} if(m[0]==='>'){cresc=-1;continue}
+  if(/[A-Ga-g]/.test(m[0])){
+   let v=velocity;if(pendingAccent){v=Math.min(127,v+20);pendingAccent=false}
+   events.push(v);if(cresc)velocity=Math.max(20,Math.min(124,velocity+cresc*3));
+  }
+ }
+ return events;
+}
+function applyAbcVelocities(raw,score){
+ const velocities=abcVelocityMap(raw);if(!velocities.length)return score;
+ const notes=[];for(const tr of(score?.tracks||[]))for(const n of(tr.notes||[]))notes.push(n);
+ notes.sort((a,b)=>(Number(a?.[0])||0)-(Number(b?.[0])||0));
+ for(let i=0;i<notes.length&&i<velocities.length;i++)if(Array.isArray(notes[i])&&notes[i].length>=4)notes[i][3]=velocities[i];
+ return score;
+}
+function parseCompositionRepresentation(text,representation){
+ let raw=String(text||'').trim(),r=representationOf({representation});
+ if(r==='free'){const m=raw.match(/^FORMAT\|(COMPACT|ABC|MIDI)\s*\n?/i);if(!m)throw new Error('Freie Wahl ohne FORMAT-Kennung.');r=m[1].toLowerCase();raw=raw.slice(m[0].length).trim()}
+ if(r==='compact'){if(/^\s*H\|/.test(raw))return{score:extractCompactScore(raw),format:'compact',raw};const obj=extractJson(raw);return{score:findScore(obj),format:'compact-json',raw,obj}}
+ if(r==='midi')return{score:extractMidiPerformanceScore(raw),format:'midi',raw};
+ if(r==='abc'){if(!globalThis.ABCImport||typeof globalThis.ABCImport.parse!=='function')throw new Error('ABC-Parser ist in dieser Anwendung nicht verfügbar.');return{score:applyAbcVelocities(raw,globalThis.ABCImport.parse(raw)),format:'abc',raw}}
+ throw new Error('Unbekannte Musikrepräsentation.');
+}
 function extractJson(text){let s=String(text||'').trim().replace(/^\`\`\`(?:json)?\s*/i,'').replace(/\s*\`\`\`$/,'').trim();const parse=x=>JSON.parse(normalizeJsonNumbers(x));try{return parse(s)}catch(_){const closed=closeCompleteScoreJson(s);if(closed)return parse(closed);const a=s.indexOf('{'),b=s.lastIndexOf('}');if(a>=0&&b>a)return parse(s.slice(a,b+1));throw _}}
 function findScore(o){
  if(o&&Array.isArray(o.v)&&Number.isFinite(Number(o.b))){const ts=Array.isArray(o.m)?o.m:[4,4],beats=(Number(ts[0])||4)*(4/(Number(ts[1])||4));return{title:String(o.t||''),bpm:Number(o.b),timeSignature:ts,tracks:o.v.map((v,i)=>({name:String(v?.[0]||('Track '+(i+1))),program:Number(v?.[1])||0,channel:Number.isFinite(Number(v?.[2]))?Number(v[2]):i,notes:(Array.isArray(v?.[3])?v[3]:[]).map(e=>{if(!Array.isArray(e)||e.length<5)throw new Error('Ungültiges kompaktes Notenereignis.');const bar=Number(e[0]),pos=Number(e[1]),du=Number(e[2]),pi=Number(e[3]),ve=Number(e[4]);if(!Number.isInteger(bar)||bar<1||!Number.isFinite(pos)||pos<0||!Number.isFinite(du)||du<=0||!Number.isInteger(pi)||pi<0||pi>127||!Number.isInteger(ve)||ve<1||ve>127)throw new Error('Ungültiges kompaktes Notenereignis.');return[(bar-1)*beats+pos,du,pi,ve,typeof e[5]==='string'?e[5]:undefined]})}))}}
@@ -56,7 +129,7 @@ function findIdea(o){if(!o||typeof o!=='object')return'';for(const k of['idea','
 async function sha256Text(text){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
 async function sha256Buffer(buf){const b=await crypto.subtle.digest('SHA-256',buf);return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
 function vlq(n){n=Math.max(0,Math.round(n));let b=[n&127];while((n>>=7))b.unshift((n&127)|128);return b}const strBytes=s=>[...new TextEncoder().encode(s)],u32=n=>[(n>>>24)&255,(n>>>16)&255,(n>>>8)&255,n&255],u16=n=>[(n>>>8)&255,n&255],chunk=(t,d)=>[...strBytes(t),...u32(d.length),...d];
-function buildMidi(score){const ppq=480,bpm=Math.max(20,Math.min(400,Number(score.bpm)||120)),ts=Array.isArray(score.timeSignature)?score.timeSignature:[4,4],tracks=[],meta=[];const mpqn=Math.round(60000000/bpm);meta.push({tick:0,bytes:[255,81,3,(mpqn>>16)&255,(mpqn>>8)&255,mpqn&255]},{tick:0,bytes:[255,88,4,Number(ts[0])||4,Math.max(0,Math.round(Math.log2(Number(ts[1])||4))),24,8]});let last=0,md=[];for(const e of meta){md.push(...vlq(e.tick-last),...e.bytes);last=e.tick}md.push(0,255,47,0);tracks.push(chunk('MTrk',md));(score.tracks||[]).forEach((tr,ti)=>{const ch=Math.max(0,Math.min(15,Number.isFinite(Number(tr.channel))?Number(tr.channel):ti%16)),prog=Math.max(0,Math.min(127,Number(tr.program)||0)),ev=[];const name=strBytes(String(tr.name||`Track ${ti+1}`));ev.push({tick:0,p:0,b:[255,3,...vlq(name.length),...name]},{tick:0,p:1,b:[192|ch,prog]});for(const n of(tr.notes||[])){if(!Array.isArray(n)||n.length<4)continue;const st=Math.max(0,Number(n[0])||0),du=Math.max(.01,Number(n[1])||.25),pitch=Math.max(0,Math.min(127,Math.round(Number(n[2])||60))),vel=Math.max(1,Math.min(127,Math.round(Number(n[3])||80)));ev.push({tick:Math.round(st*ppq),p:2,b:[144|ch,pitch,vel]},{tick:Math.round((st+du)*ppq),p:1,b:[128|ch,pitch,0]})}ev.sort((a,b)=>a.tick-b.tick||a.p-b.p);let prev=0,d=[];for(const e of ev){d.push(...vlq(e.tick-prev),...e.b);prev=e.tick}d.push(0,255,47,0);tracks.push(chunk('MTrk',d))});return new Uint8Array([...chunk('MThd',[...u16(1),...u16(tracks.length),...u16(ppq)]),...tracks.flat()])}
+function buildMidi(score){const ppq=960,bpm=Math.max(20,Math.min(400,Number(score.bpm)||120)),ts=Array.isArray(score.timeSignature)?score.timeSignature:[4,4],tracks=[],meta=[];const mpqn=Math.round(60000000/bpm);meta.push({tick:0,bytes:[255,81,3,(mpqn>>16)&255,(mpqn>>8)&255,mpqn&255]},{tick:0,bytes:[255,88,4,Number(ts[0])||4,Math.max(0,Math.round(Math.log2(Number(ts[1])||4))),24,8]});let last=0,md=[];for(const e of meta){md.push(...vlq(e.tick-last),...e.bytes);last=e.tick}md.push(0,255,47,0);tracks.push(chunk('MTrk',md));(score.tracks||[]).forEach((tr,ti)=>{const ch=Math.max(0,Math.min(15,Number.isFinite(Number(tr.channel))?Number(tr.channel):ti%16)),prog=Math.max(0,Math.min(127,Number(tr.program)||0)),ev=[];const name=strBytes(String(tr.name||`Track ${ti+1}`));ev.push({tick:0,p:0,b:[255,3,...vlq(name.length),...name]},{tick:0,p:1,b:[192|ch,prog]});for(const n of(tr.notes||[])){if(!Array.isArray(n)||n.length<4)continue;const st=Math.max(0,Number(n[0])||0),du=Math.max(.01,Number(n[1])||.25),pitch=Math.max(0,Math.min(127,Math.round(Number(n[2])||60))),vel=Math.max(1,Math.min(127,Math.round(Number(n[3])||80)));ev.push({tick:Math.round(st*ppq),p:2,b:[144|ch,pitch,vel]},{tick:Math.round((st+du)*ppq),p:1,b:[128|ch,pitch,0]})}for(const c of(tr.cc||[])){if(!Array.isArray(c)||c.length<3)continue;const st=Math.max(0,Number(c[0])||0),cc=Math.max(0,Math.min(127,Math.round(Number(c[1])||0))),value=Math.max(0,Math.min(127,Math.round(Number(c[2])||0)));ev.push({tick:Math.round(st*ppq),p:0,b:[176|ch,cc,value]})}ev.sort((a,b)=>a.tick-b.tick||a.p-b.p);let prev=0,d=[];for(const e of ev){d.push(...vlq(e.tick-prev),...e.b);prev=e.tick}d.push(0,255,47,0);tracks.push(chunk('MTrk',d))});return new Uint8Array([...chunk('MThd',[...u16(1),...u16(tracks.length),...u16(ppq)]),...tracks.flat()])}
 
 function draftField(draft,label){const lines=String(draft||'').split(/\r?\n/);const prefix=String(label||'').toLowerCase()+':';for(const line of lines){const t=line.trim();if(t.toLowerCase().startsWith(prefix))return t.slice(prefix.length).trim()}return''}
 function scoreBarCount(score){const ts=Array.isArray(score?.timeSignature)?score.timeSignature:[4,4],beats=(Number(ts[0])||4)*(4/(Number(ts[1])||4));let end=0;for(const tr of(score?.tracks||[]))for(const n of(tr.notes||[]))if(Array.isArray(n))end=Math.max(end,(Number(n[0])||0)+(Number(n[1])||0));return Math.max(1,Math.ceil(end/Math.max(.25,beats)))}
@@ -64,22 +137,23 @@ function providerName(p){return p==='anthropic'?'Anthropic / Claude':p==='google
 function localDescription(draft){const lines=String(draft||'').split(/\r?\n/).map(s=>s.trim()).filter(Boolean);const prose=lines.find(s=>!/^([#*\-]|Titel\s*:|Tonart\s*:|Tempo\s*:|Taktart\s*:|Form\s*:)/i.test(s)&&s.length>35);return String(prose||'').replace(/[*#]/g,'').slice(0,500).trim()}
 function compositionProfile(snapshot,score,draft,description){const bpm=Number(score?.bpm)||null,key=String(score?.key||score?.keySignature||score?.tonality||draftField(draft,'Tonart')||'').trim(),tempo=String(score?.tempo||score?.tempoMarking||draftField(draft,'Tempo')||'').trim(),bars=scoreBarCount(score),provider=providerName(snapshot?.provider),model=String(snapshot?.model||'').trim();const fields=[bpm?bpm+' BPM':'',tempo,key,bars+' Takte',[provider,model].filter(Boolean).join(' · ')].filter(Boolean);return{bpm,tempo,key,barCount:bars,provider,model,description:String(description||'').trim(),text:fields.join(' · ')+'\n\n'+String(description||'').trim()}}
 async function compose({snapshot,key,repeatOf=null,seriesId=null,runId,now,requestModel,usedTitles=[]}){
- const startedAt=now(),run={id:runId,testId:runId,schema:'composition-engine-2.7-diagnosis-v1',app:{name:'Composition Engine Client',version:ENGINE_VERSION},seriesId,startedAt,repeatOf,contextMode:'single-creative-source',input:{visibleTask:snapshot.visibleTask,provider:snapshot.provider,model:snapshot.model},compositionContract:COMPOSITION_CONTRACT,events:[],aiCalls:[],requestSnapshot:structuredClone(snapshot)};
+ const startedAt=now(),run={id:runId,testId:runId,schema:'composition-engine-2.7-diagnosis-v1',app:{name:'Composition Engine Client',version:ENGINE_VERSION},seriesId,startedAt,repeatOf,contextMode:'single-creative-source',input:{visibleTask:snapshot.visibleTask,provider:snapshot.provider,model:snapshot.model,representation:representationOf(snapshot)},compositionContract:REPRESENTATION_CONTRACTS[representationOf(snapshot)],events:[],aiCalls:[],requestSnapshot:structuredClone(snapshot)};
  const ev=(phase,data={})=>run.events.push({at:now(),phase,...data});
  ev('run_started',{note:'Ein einziger kreativer KI-Schritt erzeugt die vollständige symbolische Partitur. Danach keine KI-Übersetzung.'});
  const call=async(prompt,stage)=>requestModel({snapshot,key,promptText:prompt,stage,run,event:ev});
  let rawComposition=String(await call(createPrompts(snapshot).composition,'composition')||'').trim();
  if(!rawComposition)throw new Error('Die Komposition ist leer.');
- let score,obj=null;try{if(/^\s*H\|/.test(rawComposition))score=extractCompactScore(rawComposition);else{obj=extractJson(rawComposition);score=findScore(obj)}}catch(e){
-   ev('composition_format_invalid',{message:e?.message||String(e),characters:rawComposition.length});
+ let score,obj=null,parsedFormat='';try{const parsed=parseCompositionRepresentation(rawComposition,representationOf(snapshot));score=parsed.score;obj=parsed.obj||null;parsedFormat=parsed.format}catch(e){
+   run.composition=rawComposition;run.rawCompositionOnError=rawComposition;ev('composition_format_invalid',{message:e?.message||String(e),characters:rawComposition.length,rawComposition});
    throw new Error('Die komponierende KI hat keine vollständig lesbare Partitur geliefert: '+(e?.message||String(e)));
  }
- run.composition=rawComposition;run.parsedModelJson=obj;run.score=score;ev('composition_parsed',{changed:false,note:'Die kreative Ausgabe selbst ist die Partitur; keine zweite KI und keine musikalische Übersetzung.'});
+ run.composition=rawComposition;run.parsedModelJson=obj;run.score=score;run.representation={requested:representationOf(snapshot),parsed:parsedFormat};ev('composition_parsed',{changed:false,representation:parsedFormat,note:'Die kreative Ausgabe selbst ist die Partitur; keine zweite KI und keine musikalische Übersetzung.'});
  const title=String(score?.title||'').trim(),allTitles=usedTitles.filter(Boolean);if(title&&allTitles.some(t=>String(t).toLocaleLowerCase('de-DE')===title.toLocaleLowerCase('de-DE'))){let nt=(await call(duplicateTitlePrompt(title,allTitles,rawComposition),'title_renaming')).trim().replace(/^Titel:\\s*/i,'').replace(/^['“”"]|['“”"]$/g,'').trim();if(!nt||allTitles.some(t=>String(t).toLocaleLowerCase('de-DE')===nt.toLocaleLowerCase('de-DE')))nt=title+' '+new Date().toLocaleDateString('de-DE');score.title=nt;ev('duplicate_title_replaced',{oldTitle:title,newTitle:nt})}
  const midiBytes=buildMidi(score),buf=midiBytes.buffer.slice(midiBytes.byteOffset,midiBytes.byteOffset+midiBytes.byteLength),midiHash=await sha256Buffer(buf);run.midi={bytes:midiBytes.byteLength,sha256:midiHash,note:'Deterministisch lokal direkt aus der kreativen Quellpartitur erzeugt; kein KI-Übersetzungsschritt.'};ev('midi_generated',{bytes:midiBytes.byteLength,sha256:midiHash});
- let idea='';try{idea=String(await call(createPrompts(snapshot,JSON.stringify(scoreToCompact(score))).compositionIdea,'composition_analysis_afterwards')||'').trim()}catch(e){ev('composition_analysis_failed',{message:e?.message||String(e)})}run.idea=idea;run.profile=compositionProfile(snapshot,score,'',idea);ev('composition_profile_created',{bpm:run.profile.bpm,tempo:run.profile.tempo,key:run.profile.key,barCount:run.profile.barCount,provider:run.profile.provider,model:run.profile.model});run.completedAt=now();run.status='ok';
+ const analysisSource=(parsedFormat==='abc'||parsedFormat==='midi'||parsedFormat==='compact')?rawComposition:JSON.stringify(scoreToCompact(score));
+ let idea='';try{idea=String(await call(createPrompts(snapshot,analysisSource).compositionIdea,'composition_analysis_afterwards')||'').trim()}catch(e){ev('composition_analysis_failed',{message:e?.message||String(e)})}run.idea=idea;run.profile=compositionProfile(snapshot,score,'',idea);ev('composition_profile_created',{bpm:run.profile.bpm,tempo:run.profile.tempo,key:run.profile.key,barCount:run.profile.barCount,provider:run.profile.provider,model:run.profile.model});run.completedAt=now();run.status='ok';
  return{run,midiBytes};
 }
 
-window.CompositionEngine=Object.freeze({name:ENGINE_NAME,version:ENGINE_VERSION,compose,analyzeScore,analyzeImprovement,improveScore,COMPOSITION_CONTRACT,TECHNICAL_CONTRACT,createPrompts,criticalAnalysisPrompt,postImprovementAnalysisPrompt,approvedImprovementPrompt,scoreToCompact,duplicateTitlePrompt,makeRequest,actualRequest,extractText,extractJson,findScore,findIdea,sha256Text,sha256Buffer,buildMidi,extractCompactScore});
+window.CompositionEngine=Object.freeze({name:ENGINE_NAME,version:ENGINE_VERSION,representations:REPRESENTATION_CONTRACTS,compose,analyzeScore,analyzeImprovement,improveScore,COMPOSITION_CONTRACT,TECHNICAL_CONTRACT,createPrompts,criticalAnalysisPrompt,postImprovementAnalysisPrompt,approvedImprovementPrompt,scoreToCompact,duplicateTitlePrompt,makeRequest,actualRequest,extractText,extractJson,findScore,findIdea,sha256Text,sha256Buffer,buildMidi,extractCompactScore,extractMidiPerformanceScore,abcVelocityMap,applyAbcVelocities,parseCompositionRepresentation});
 })();
