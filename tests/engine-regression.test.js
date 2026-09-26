@@ -65,7 +65,7 @@ assert.ok(analysisPrompt.includes('URTEIL: ÄNDERN'));
 assert.ok(analysisPrompt.includes('URTEIL: BEHALTEN'));
 const improvementPrompt = engine.approvedImprovementPrompt({title:'Test',bpm:80,timeSignature:[4,4],tracks:[]},'URTEIL: ÄNDERN\\nBegleitung variieren.');
 assert.ok(improvementPrompt.includes('hörbare Schwäche'));
-assert.ok(improvementPrompt.includes('bewahre alles andere exakt'));
+assert.ok(improvementPrompt.includes('Bewahre überzeugende Eigenschaften'));
 const openaiTechnical = engine.makeRequest('openai','gpt-5.6','x','approved_score_improvement');
 assert.strictEqual(openaiTechnical.body.reasoning,undefined);
 const geminiTechnical = engine.makeRequest('google','gemini-3.8-flash','x','approved_score_improvement');
