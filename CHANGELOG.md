@@ -54,3 +54,9 @@
 ## 2.2.1 (2026-09-26)
 - OpenAI: nur technische MIDI-Übersetzung und Fortsetzungen mit `reasoning.effort=low` und `max_output_tokens=16000`, um leere Fortsetzungen durch Reasoning-Tokenverbrauch zu vermeiden.
 - Keine Änderungen an musikalischer Entwurfsphase oder musikalischen Vorgaben. Reale Provider-Validierung noch ausstehend.
+
+
+## 2.2.2 (2026-09-26)
+- Reproduziert mit MusicChat-Diagnose 06:23:38: Die zweite MIDI-Antwort enthielt 447 Noten in zwei Stimmen, war vollständig, nutzte jedoch JSON-ungültige Kurzdezimalzahlen wie `.5`. Der bisherige Parser hielt dies für Abschneiden und forderte unnötig eine leere Fortsetzung an.
+- `extractJson` ergänzt fehlende führende Nullen ausschließlich außerhalb von Zeichenketten, bevor JSON geparst wird; der musikalische Inhalt bleibt erhalten. Der erste Diagnosedurchlauf war tatsächlich unvollständig und wird weiterhin als solcher behandelt.
+- Reproduktion mit der protokollierten zweiten Antwort erfolgreich; Live-Provider- und Browser-Test ausstehend.
