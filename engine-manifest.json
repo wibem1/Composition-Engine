@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
-  "updated": "2026-09-25",
+  "updated": "2026-09-26",
   "default": "stable-current",
   "engines": [
     {
       "id": "stable-current",
-      "label": "Aktuelle freigegebene Engine 2.2.0",
-      "version": "2.2.0",
+      "label": "Aktuelle freigegebene Engine 2.2.3",
+      "version": "2.2.3",
       "url": "composition-engine.js",
       "channel": "stable",
       "archived": false
