@@ -1,7 +1,7 @@
 (()=>{'use strict';
 
 const ENGINE_NAME='Composition Engine';
-const ENGINE_VERSION='2.6.0';
+const ENGINE_VERSION='2.6.1';
 
 const TECHNICAL_CONTRACT=`TECHNISCHES FORMAT (kompakt):\nNur valides JSON.\n{\"t\":\"Titel\",\"b\":BPM,\"m\":[Z,N],\"v\":[[\"Instrument\",Program,Channel,[[Takt,Position,Dauer,Pitch,Velocity,"Notenname?"],...]],...]}\nTakt beginnt bei 1, Position bei 0. Pausen durch Lücken. Jede klingende Note der fertigen Komposition genau einmal ausgeben. Optionaler Notenname bewahrt die beabsichtigte Schreibweise (z. B. Db4/C#4). Keine musikalischen Änderungen.`;
 function createPrompts(snapshot,draft='',translated=''){
@@ -12,6 +12,14 @@ function createPrompts(snapshot,draft='',translated=''){
  };
 }
 function criticalAnalysisPrompt(score){return 'Beurteile diese Partitur als musikalisches Werk. Suche nicht zwanghaft nach Fehlern. Frage zuerst, ob die Komposition in ihrem Charakter, Verlauf, ihrer Phrasierung, Rhythmik, Harmonik, Textur, Spannung und Entwicklung musikalisch überzeugt. Nenne nur dann ÄNDERN, wenn eine wesentliche musikalische Schwäche vorliegt und eine Änderung einen klaren hörbaren Gewinn verspricht. Kleine technische Auffälligkeiten, einzelne Notenlücken, Überlappungen oder MIDI-Dauern sind NICHT Gegenstand dieser musikalischen Analyse und dürfen allein kein ÄNDERN begründen. Beginne genau mit "URTEIL: ÄNDERN" oder "URTEIL: BEHALTEN". Danach höchstens 220 Zeichen: bei ÄNDERN die eine wichtigste musikalische Schwäche und eine knappe musikalische Verbesserung; bei BEHALTEN ein knapper Grund. Keine Lobhudelei, keine technische Fehlerliste, keine Takt-für-Takt-Abhandlung.\\n\\nPARTITUR:\\n'+JSON.stringify(scoreToCompact(score))+'\\n\\nFORMAT:\\n'+TECHNICAL_CONTRACT}
+function conciseAssessment(value){
+ const raw=String(value||'').trim().replace(/\r/g,'');
+ const m=raw.match(/^\s*URTEIL:\s*(ÄNDERN|BEHALTEN)\b\s*([\s\S]*)$/i);
+ if(!m)return raw.slice(0,220);
+ const verdict='URTEIL: '+m[1].toUpperCase();
+ const reason=m[2].replace(/^\s*[:\-–—]?\s*/,'').replace(/\s+/g,' ').trim();
+ return reason?verdict+'\n'+reason.slice(0,220):verdict;
+}
 function approvedImprovementPrompt(score,assessment){return 'Überarbeite die vorhandene Partitur musikalisch mit voller kompositorischer Sorgfalt. Beseitige die im freigegebenen Urteil diagnostizierten hörbaren Ursachen tatsächlich. Priorität haben Fluss und Phrasierung: ungewollte Minipausen, Lücken, zu kurze Dauern, fehlende Bindung, abgehackte Übergänge oder mechanisches Stolpern müssen in den konkreten Startzeiten und Dauern korrigiert werden, soweit sie nicht musikalisch beabsichtigt sind. Prüfe die geänderten Passagen als zusammenhängenden zeitlichen Verlauf. Bewahre überzeugende Eigenschaften und ändere nichts ohne musikalischen Grund. Antworte ausschließlich mit der vollständigen Partitur im kompakten JSON-Format.\\n\\nFREIGEGEBENES URTEIL:\\n'+String(assessment||'').trim()+'\\n\\nPARTITUR:\\n'+JSON.stringify(scoreToCompact(score))+'\\n\\nFORMAT:\\n'+TECHNICAL_CONTRACT}
 function postImprovementAnalysisPrompt(improvedScore){return 'Beurteile diese Partitur unabhängig als musikalisches Werk, ohne eine frühere Fassung vorauszusetzen. Suche nicht zwanghaft nach Fehlern. Entscheide, ob eine wesentliche musikalische Schwäche vorliegt, deren Änderung einen klaren hörbaren Gewinn verspricht. Kleine technische Auffälligkeiten, einzelne Notenlücken, Überlappungen oder MIDI-Dauern sind nicht Gegenstand dieser musikalischen Analyse. Beginne genau mit "URTEIL: ÄNDERN" oder "URTEIL: BEHALTEN". Danach höchstens 220 Zeichen: nur die wichtigste musikalische Begründung; bei ÄNDERN eine knappe musikalische Verbesserung. Keine Lobhudelei, keine technische Fehlerliste.\\n\\nPARTITUR:\\n'+JSON.stringify(scoreToCompact(improvedScore))+'\\n\\nFORMAT:\\n'+TECHNICAL_CONTRACT}
 async function analyzeScore({score,snapshot,key,requestModel,run=null,event=null}){if(!score)throw new Error('Keine Partitur für die Analyse.');if(typeof requestModel!=='function')throw new Error('requestModel fehlt.');const promptText=criticalAnalysisPrompt(score),text=conciseAssessment(await requestModel({snapshot,key,promptText,stage:'critical_score_analysis',run,event}));return{assessment:text,unchanged:/^\\s*URTEIL:\\s*BEHALTEN\\b/im.test(text),promptText}}
