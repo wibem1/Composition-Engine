@@ -41,3 +41,12 @@ Dieser Vertrag ist vor jeder Änderung und vor jeder Freigabe gegen den tatsäch
 ## Änderungsregel
 
 Eine Änderung, die einer dieser Regeln widerspricht, ist ein Architekturwechsel und darf nicht als Patch oder Fehlerbehebung in die stabile Engine gelangen.
+
+
+## Allgemeine Analyse- und Verbesserungsfähigkeit (ab Engine 2.4.0)
+
+- Die Composition Engine stellt appübergreifend eine **kritische, hörbezogene Partituranalyse** bereit. Die Analyse arbeitet ausschließlich auf der bereits technisch vorliegenden fertigen Partitur und verändert sie nicht.
+- Das Analyseergebnis beginnt verbindlich mit `URTEIL: ÄNDERN` oder `URTEIL: BEHALTEN` und bleibt kurz; bei Änderungsbedarf enthält es einen konkret umsetzbaren Vorschlag.
+- Die Engine stellt außerdem die **Umsetzung eines ausdrücklich freigegebenen Verbesserungsvorschlags** bereit. Dabei muss die diagnostizierte hörbare Schwäche tatsächlich adressiert werden; nicht erforderliche Änderungen sind zu vermeiden und alles andere ist zu bewahren.
+- Analyse und Verbesserung sind **Fähigkeiten der Engine**. Ob und wie eine App sie in ihrer Oberfläche anbietet, entscheidet die jeweilige App.
+- Provider-Leistungssteuerung ist stufenbezogen: kreative Komposition und kritische musikalische Analyse bleiben ungedrosselt; rein technische Übersetzung sowie die Ausführung einer bereits freigegebenen Änderung dürfen providerabhängig mit niedriger Reasoning-Stufe laufen.
