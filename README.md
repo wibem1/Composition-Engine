@@ -2,7 +2,7 @@
 
 Gemeinsamer appübergreifender Kompositionskern für die Klangwerke-Kompositionswerkzeuge.
 
-## Stabile Architektur – 2.2.0
+## Stabile Architektur – 2.4.0
 
 Der verbindliche Normalfall ist:
 
@@ -42,3 +42,7 @@ SemVer: MAJOR.MINOR.PATCH.
 
 ## Freigabe 2.2.0 – 25.09.2026
 Der zentrale Runtime-Entry-Point `composition-engine.js` enthält nun Engine 2.2.0. Gegenüber 2.1 bleibt die freie Komposition und werkgetreue technische Übersetzung unverändert; anschließend folgt eine echte KI-Analyse der fertigen Komposition. Die Kompositionsbeschreibung wird aus dieser Analyse erzeugt. Die Analyse bewertet nicht mit BEHALTEN/ÄNDERN und verändert die Komposition nicht.
+
+
+## Engine 2.4.0 – Analyse und Verbesserung
+Die zentrale Engine stellt nun zusätzlich `analyzeScore()` und `improveScore()` bereit. Damit gehören kritische hörbezogene Partituranalyse und die Umsetzung eines vom Nutzer freigegebenen Verbesserungsvorschlags zum gemeinsamen Engine-Modul. Apps entscheiden unabhängig davon, ob und wie sie diese Funktionen anbieten. Kreative Komposition und kritische Analyse bleiben leistungsorientiert; technische MIDI-Übersetzung und die Ausführung einer bereits freigegebenen Änderung verwenden, soweit vom Provider unterstützt, eine niedrige Reasoning-Stufe.
