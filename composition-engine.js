@@ -1,7 +1,7 @@
 (()=>{'use strict';
 
 const ENGINE_NAME='Composition Engine';
-const ENGINE_VERSION='2.7.0';
+const ENGINE_VERSION='2.7.1';
 
 const COMPOSITION_CONTRACT=`VERBINDLICHES KOMPOSITIONSFORMAT (musikalische Quelle der Wahrheit):\nNur valides JSON.\n{"t":"Titel","b":BPM,"m":[Z,N],"v":[["Instrument",Program,Channel,[[Takt,Position,Dauer,Pitch,Velocity,"Notenname?"],...]],...]}\nTakt beginnt bei 1, Position bei 0; Position und Dauer sind in Viertelnoten-Einheiten innerhalb des Takts angegeben. Pausen entstehen ausschließlich durch bewusst gesetzte Lücken. Jede klingende Note der Komposition steht genau einmal in diesem Objekt. Dieses Objekt IST die fertige Komposition; eine spätere Instanz darf keine Noten ergänzen oder musikalisch interpretieren.`;
 const TECHNICAL_CONTRACT=COMPOSITION_CONTRACT;
