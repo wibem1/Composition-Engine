@@ -49,3 +49,8 @@
 - Neuer dritter KI-Schritt analysiert die fertige Komposition musikalisch.
 - Kompositionsbeschreibung stammt aus dieser Analyse statt aus lokaler Extraktion einer Prosazeile.
 - Analyse darf schematische Wiederholung und geringe Entwicklung konkret benennen, verändert die Komposition aber nicht.
+
+
+## 2.2.1 (2026-09-26)
+- OpenAI: nur technische MIDI-Übersetzung und Fortsetzungen mit `reasoning.effort=low` und `max_output_tokens=16000`, um leere Fortsetzungen durch Reasoning-Tokenverbrauch zu vermeiden.
+- Keine Änderungen an musikalischer Entwurfsphase oder musikalischen Vorgaben. Reale Provider-Validierung noch ausstehend.
