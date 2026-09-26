@@ -11,10 +11,10 @@ Dieser Vertrag ist vor jeder Änderung und vor jeder Freigabe gegen den tatsäch
    Die Engine ergänzt keine stilistischen, formalen, harmonischen oder dramaturgischen Vorgaben, die der Nutzer nicht verlangt hat.
 
 3. **Die erste KI erzeugt eine vollständige, konkrete Komposition.**
-   Sie beschreibt nicht, was später komponiert werden soll. Das Ergebnis muss musikalisch so eindeutig sein, dass die nächste Stufe keine eigenen musikalischen Entscheidungen treffen muss.
+   Sie beschreibt nicht, was später komponiert werden soll. Das Ergebnis ist die vollständige symbolische Quellpartitur und legt jede musikalische Entscheidung unmittelbar fest.
 
-4. **Erst danach folgt technische Realisation.**
-   Die technische Stufe überträgt die fertige Komposition unverändert in das technische Partitur-/MIDI-Format. Sie darf nicht komponieren, ergänzen, vereinfachen, regularisieren oder verbessern.
+4. **Erst danach folgt deterministische technische Realisation.**
+   Aus der fertigen symbolischen Quellpartitur wird MIDI lokal und deterministisch erzeugt. Es gibt keine zweite KI-Übersetzungsstufe, die musikalische Entscheidungen ergänzen oder verändern könnte.
 
 5. **Parsing und MIDI-Erzeugung sind technisch und deterministisch.**
    Technische Reparaturen dürfen nur eindeutig technische Syntaxfehler korrigieren und keine musikalischen Inhalte erfinden.
@@ -49,7 +49,7 @@ Eine Änderung, die einer dieser Regeln widerspricht, ist ein Architekturwechsel
 - Das Analyseergebnis beginnt verbindlich mit `URTEIL: ÄNDERN` oder `URTEIL: BEHALTEN` und bleibt kurz; bei Änderungsbedarf enthält es einen konkret umsetzbaren Vorschlag.
 - Die Engine stellt außerdem die **Umsetzung eines ausdrücklich freigegebenen Verbesserungsvorschlags** bereit. Dabei muss die diagnostizierte hörbare Schwäche tatsächlich adressiert werden; nicht erforderliche Änderungen sind zu vermeiden und alles andere ist zu bewahren.
 - Analyse und Verbesserung sind **Fähigkeiten der Engine**. Ob und wie eine App sie in ihrer Oberfläche anbietet, entscheidet die jeweilige App.
-- Provider-Leistungssteuerung ist stufenbezogen: kreative Komposition und kritische musikalische Analyse bleiben ungedrosselt; rein technische Übersetzung sowie die Ausführung einer bereits freigegebenen Änderung dürfen providerabhängig mit niedriger Reasoning-Stufe laufen.
+- Provider-Leistungssteuerung ist stufenbezogen: kreative Komposition, kritische musikalische Analyse und freigegebene musikalische Verbesserung bleiben ungedrosselt. Nur nichtkreative Nachbeschreibung darf providerabhängig niedriger priorisiert werden.
 
 - **Nach jeder freigegebenen Verbesserung wird die neue aktuelle Fassung erneut musikalisch analysiert.** Diese Folgeanalyse vergleicht Original, vorherige Analyse und verbesserte Fassung, ihr Urteil bezieht sich aber ausdrücklich auf die aktuelle verbesserte Fassung. Die vorherige Analyse bleibt versionsbezogen erhalten. Ergibt die Folgeanalyse erneut `URTEIL: ÄNDERN`, darf eine weitere Änderung nur nach erneuter ausdrücklicher Freigabe erfolgen; es gibt keine automatische Optimierungsschleife.
 
@@ -61,9 +61,9 @@ Eine Änderung, die einer dieser Regeln widerspricht, ist ein Architekturwechsel
 - Sichtbare Analyse bleibt auf höchstens 450 Zeichen nach dem Urteil begrenzt.
 
 
-## Engine 2.7 Architektur-Kandidat – überprüfbare kreative Quelle
+## Ab Engine 2.7 – überprüfbare kreative Quelle
 
-Diese Regeln gelten für den Kandidaten und ersetzen dort die bisherige KI-zu-KI-Übersetzung:
+Diese Regeln ersetzen die bisherige KI-zu-KI-Übersetzung:
 
 - Die komponierende KI erzeugt **direkt die vollständige symbolische Partitur** im verbindlichen Kompositionsformat. Diese Partitur ist die musikalische Quelle der Wahrheit.
 - Es gibt **keine zweite KI für MIDI-/Partiturübersetzung**. Nach der kreativen Ausgabe folgen nur Parsing und deterministische lokale MIDI-Erzeugung.
@@ -71,4 +71,3 @@ Diese Regeln gelten für den Kandidaten und ersetzen dort die bisherige KI-zu-KI
 - Praktische Spielbarkeit im verlangten Tempo ist Teil des Kompositionsauftrags; sie wird nicht nachträglich von einer technischen KI erfunden oder repariert.
 - Analyse erhält die tatsächlich erzeugte symbolische Partitur. Sie darf nicht mit einer bloßen Beschreibung des Stücks verwechselt werden.
 - Eine freigegebene musikalische Verbesserung verändert die **musikalische Quellpartitur**; MIDI wird danach erneut deterministisch daraus erzeugt. Es gibt keine kreative Änderung auf einer davon getrennten technischen Kopie.
-- Der Kandidat bleibt auf einem separaten Branch. Der zentrale Runtime-Entry-Point auf main bleibt 2.6.1, bis technische Tests und ein bewusster musikalischer Test die neue Architektur rechtfertigen.
