@@ -14,7 +14,7 @@ vm.createContext(sandbox);
 vm.runInContext(source, sandbox);
 const engine = sandbox.window.CompositionEngine;
 
-assert.strictEqual(engine.version, '2.3.1');
+assert.strictEqual(engine.version, '2.4.0');
 
 // Regression 2.2.2: JSON short decimals outside strings are accepted without altering strings.
 const shortDecimals = '{"t":"Punkt .5 bleibt Text","b":96,"m":[4,4],"v":[["Piano",0,0,[[1,0,.5,60,80],[1,.5,.25,62,80]]]]}';
@@ -52,3 +52,20 @@ assert.ok(prompts.midiTranslation.includes('fertige Komposition'));
 assert.ok(!prompts.midiTranslation.includes('musikalischen Entwurf'));
 
 console.log('Architecture invariant direct-composition: OK');
+
+// Engine 2.4.0: analysis/improvement are general engine capabilities.
+assert.strictEqual(typeof engine.analyzeScore, 'function');
+assert.strictEqual(typeof engine.improveScore, 'function');
+assert.strictEqual(typeof engine.criticalAnalysisPrompt, 'function');
+assert.strictEqual(typeof engine.approvedImprovementPrompt, 'function');
+const analysisPrompt = engine.criticalAnalysisPrompt({title:'Test',bpm:80,timeSignature:[4,4],tracks:[]});
+assert.ok(analysisPrompt.includes('URTEIL: ÄNDERN'));
+assert.ok(analysisPrompt.includes('URTEIL: BEHALTEN'));
+const improvementPrompt = engine.approvedImprovementPrompt({title:'Test',bpm:80,timeSignature:[4,4],tracks:[]},'URTEIL: ÄNDERN\\nBegleitung variieren.');
+assert.ok(improvementPrompt.includes('hörbare Schwäche'));
+assert.ok(improvementPrompt.includes('bewahre alles andere exakt'));
+const openaiTechnical = engine.makeRequest('openai','gpt-5.6','x','approved_score_improvement');
+assert.strictEqual(openaiTechnical.body.reasoning.effort,'low');
+const geminiTechnical = engine.makeRequest('google','gemini-3.8-flash','x','approved_score_improvement');
+assert.strictEqual(geminiTechnical.body.generationConfig.thinkingConfig.thinkingLevel,'low');
+console.log('Engine 2.4.0 analysis/improvement capability: OK');
