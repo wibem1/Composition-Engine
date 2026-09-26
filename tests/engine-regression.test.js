@@ -4,7 +4,7 @@ const sandbox={window:{},crypto:require('crypto').webcrypto,TextEncoder,structur
 sandbox.globalThis=sandbox.window;
 vm.createContext(sandbox);vm.runInContext(source,sandbox);
 const engine=sandbox.window.CompositionEngine;
-assert.strictEqual(engine.version,'2.9.0-representation-lab.1');
+assert.strictEqual(engine.version,'2.9.0');
 assert.ok(engine.representations.compact&&engine.representations.abc&&engine.representations.midi&&engine.representations.free);
 
 const compact='H|["Test",96,4,4]\nV|["Piano",0,0]\nB|1|[[0,1,60,72],[1,1,64,76]]';
@@ -24,4 +24,5 @@ const pFree=engine.createPrompts({visibleTask:'Test',representation:'free'}).com
 assert.ok(pABC.includes('ABC-NOTATION'));assert.ok(pMIDI.includes('960 PPQ'));assert.ok(pFree.includes('FORMAT|COMPACT'));
 assert.strictEqual(typeof engine.analyzeScore,'function');assert.strictEqual(typeof engine.improveScore,'function');
 assert.ok(source.includes("contextMode:'single-creative-source'"));assert.ok(!source.includes("'midi_translation'"));
-console.log('Composition Engine representation lab regression tests: OK');
+assert.ok(source.includes("const analysisSource=(parsedFormat==='abc'||parsedFormat==='midi'||parsedFormat==='compact')?rawComposition:JSON.stringify(scoreToCompact(score));"));
+console.log('Composition Engine 2.9.0 regression tests: OK');
