@@ -1,7 +1,7 @@
 (()=>{'use strict';
 
 const ENGINE_NAME='Composition Engine';
-const ENGINE_VERSION='2.9.0';
+const ENGINE_VERSION='2.9.1';
 
 const COMPOSITION_CONTRACT=`KOMPAKTES PARTITURFORMAT:\nH|["Titel",BPM,Zähler,Nenner]\nV|["Instrument",Program,Channel]\nB|Takt|[[Position,Dauer,Pitch,Velocity],...]\nDanach weitere B-Zeilen oder eine neue V-Zeile. Jede Zeile ist abgeschlossen. Takt beginnt bei 1; Position und Dauer in Viertelnoten-Einheiten. Pausen sind Lücken. Notennamen werden nicht zusätzlich ausgegeben.`
 const TECHNICAL_CONTRACT=COMPOSITION_CONTRACT;
@@ -85,25 +85,24 @@ function extractMidiPerformanceScore(text){
 }
 function abcVelocityMap(raw){
  const marks={ppp:28,pp:38,p:50,mp:62,mf:78,f:94,ff:110,fff:122,sfz:118,ffz:122,fp:92};
- let velocity=78,pendingAccent=false,cresc=0;
+ let velocity=78,pendingAccent=false,hairpin=null;
  const events=[];
  const tokenRe=/!([^!]+)!|\+([^+]+)\+|\[V:[^\]]+\]|(?:\^\^|__|\^|_|=)?[A-Ga-g][,']*\d*(?:\/\d*|\/)?|[<>]/g;
+ const begin=dir=>{hairpin={dir,startIndex:events.length,startVelocity:velocity}};
+ const finish=()=>{if(!hairpin)return;const count=events.length-hairpin.startIndex;if(count>0){const delta=hairpin.dir*(count<=2?8:count<=4?12:count<=8?18:24),target=Math.max(28,Math.min(122,hairpin.startVelocity+delta));for(let i=0;i<count;i++){const q=(i+1)/count;events[hairpin.startIndex+i]=Math.round(hairpin.startVelocity+(target-hairpin.startVelocity)*q)}velocity=target}hairpin=null};
  let m;while((m=tokenRe.exec(String(raw||'')))){
   const deco=String(m[1]||m[2]||'').toLowerCase().trim();
   if(deco){
-   if(Object.prototype.hasOwnProperty.call(marks,deco)){velocity=marks[deco];cresc=0;continue}
-   if(/^(crescendo|cresc\.?|<)$/.test(deco)){cresc=1;continue}
-   if(/^(diminuendo|dim\.?|decresc\.?|>)$/.test(deco)){cresc=-1;continue}
-   if(/^(accent|sf|sff|sfz|sforzando|marcato|>)$/.test(deco)){pendingAccent=true;continue}
-   if(/^(endcrescendo|enddiminuendo|enddim|enddecrescendo)$/.test(deco)){cresc=0;continue}
+   if(Object.prototype.hasOwnProperty.call(marks,deco)){finish();velocity=marks[deco];continue}
+   if(/^(crescendo|cresc\.?|<)$/.test(deco)){finish();begin(1);continue}
+   if(/^(diminuendo|dim\.?|decresc\.?|>)$/.test(deco)){finish();begin(-1);continue}
+   if(/^(accent|sf|sff|sforzando|marcato)$/.test(deco)){pendingAccent=true;continue}
+   if(/^(endcrescendo|enddiminuendo|enddim|enddecrescendo)$/.test(deco)){finish();continue}
   }
-  if(m[0]==='<'){cresc=1;continue} if(m[0]==='>'){cresc=-1;continue}
-  if(/[A-Ga-g]/.test(m[0])){
-   let v=velocity;if(pendingAccent){v=Math.min(127,v+20);pendingAccent=false}
-   events.push(v);if(cresc)velocity=Math.max(20,Math.min(124,velocity+cresc*3));
-  }
+  if(m[0]==='<'){finish();begin(1);continue} if(m[0]==='>'){finish();begin(-1);continue}
+  if(/[A-Ga-g]/.test(m[0])){let v=velocity;if(pendingAccent){v=Math.min(127,v+20);pendingAccent=false}events.push(v)}
  }
- return events;
+ finish();return events;
 }
 function applyAbcVelocities(raw,score){
  const velocities=abcVelocityMap(raw);if(!velocities.length)return score;
