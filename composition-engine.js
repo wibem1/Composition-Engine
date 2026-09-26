@@ -1,7 +1,7 @@
 (()=>{'use strict';
 
 const ENGINE_NAME='Composition Engine';
-const ENGINE_VERSION='2.9.0-representation-lab.2';
+const ENGINE_VERSION='2.9.0';
 
 const COMPOSITION_CONTRACT=`KOMPAKTES PARTITURFORMAT:\nH|["Titel",BPM,Zähler,Nenner]\nV|["Instrument",Program,Channel]\nB|Takt|[[Position,Dauer,Pitch,Velocity],...]\nDanach weitere B-Zeilen oder eine neue V-Zeile. Jede Zeile ist abgeschlossen. Takt beginnt bei 1; Position und Dauer in Viertelnoten-Einheiten. Pausen sind Lücken. Notennamen werden nicht zusätzlich ausgegeben.`
 const TECHNICAL_CONTRACT=COMPOSITION_CONTRACT;
@@ -150,7 +150,7 @@ async function compose({snapshot,key,repeatOf=null,seriesId=null,runId,now,reque
  run.composition=rawComposition;run.parsedModelJson=obj;run.score=score;run.representation={requested:representationOf(snapshot),parsed:parsedFormat};ev('composition_parsed',{changed:false,representation:parsedFormat,note:'Die kreative Ausgabe selbst ist die Partitur; keine zweite KI und keine musikalische Übersetzung.'});
  const title=String(score?.title||'').trim(),allTitles=usedTitles.filter(Boolean);if(title&&allTitles.some(t=>String(t).toLocaleLowerCase('de-DE')===title.toLocaleLowerCase('de-DE'))){let nt=(await call(duplicateTitlePrompt(title,allTitles,rawComposition),'title_renaming')).trim().replace(/^Titel:\\s*/i,'').replace(/^['“”"]|['“”"]$/g,'').trim();if(!nt||allTitles.some(t=>String(t).toLocaleLowerCase('de-DE')===nt.toLocaleLowerCase('de-DE')))nt=title+' '+new Date().toLocaleDateString('de-DE');score.title=nt;ev('duplicate_title_replaced',{oldTitle:title,newTitle:nt})}
  const midiBytes=buildMidi(score),buf=midiBytes.buffer.slice(midiBytes.byteOffset,midiBytes.byteOffset+midiBytes.byteLength),midiHash=await sha256Buffer(buf);run.midi={bytes:midiBytes.byteLength,sha256:midiHash,note:'Deterministisch lokal direkt aus der kreativen Quellpartitur erzeugt; kein KI-Übersetzungsschritt.'};ev('midi_generated',{bytes:midiBytes.byteLength,sha256:midiHash});
- let idea='';try{idea=String(await call(createPrompts(snapshot,JSON.stringify(scoreToCompact(score))).compositionIdea,'composition_analysis_afterwards')||'').trim()}catch(e){ev('composition_analysis_failed',{message:e?.message||String(e)})}run.idea=idea;run.profile=compositionProfile(snapshot,score,'',idea);ev('composition_profile_created',{bpm:run.profile.bpm,tempo:run.profile.tempo,key:run.profile.key,barCount:run.profile.barCount,provider:run.profile.provider,model:run.profile.model});run.completedAt=now();run.status='ok';
+ const analysisSource=(parsedFormat==='abc'||parsedFormat==='midi'||parsedFormat==='compact')?rawComposition:JSON.stringify(scoreToCompact(score));\n let idea='';try{idea=String(await call(createPrompts(snapshot,analysisSource).compositionIdea,'composition_analysis_afterwards')||'').trim()}catch(e){ev('composition_analysis_failed',{message:e?.message||String(e)})}run.idea=idea;run.profile=compositionProfile(snapshot,score,'',idea);ev('composition_profile_created',{bpm:run.profile.bpm,tempo:run.profile.tempo,key:run.profile.key,barCount:run.profile.barCount,provider:run.profile.provider,model:run.profile.model});run.completedAt=now();run.status='ok';
  return{run,midiBytes};
 }
 
