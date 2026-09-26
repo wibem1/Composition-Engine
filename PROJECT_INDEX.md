@@ -6,8 +6,8 @@ Dieser Index ist die zentrale Orientierung für die gemeinsam entwickelten Musik
 
 | Projekt | Repository | CURRENT | Engine | Status / Referenz |
 |---|---|---|---|---|
-| Composition Engine | wibem1/Composition-Engine | 2.3.1, main | 2.3.1 | CURRENT + zentrale stabile Engine. Manifest 2.3.1: 798430e. Regressionstests: 153a1c4. |
-| Minimal Composer | wibem1/Minimal-Composer | 0.8.13, main | zentrale 2.3.1 | CURRENT TEST CANDIDATE. App: ce05890; Cache: 9be7daa. Analyse wird jetzt sichtbar angezeigt; hörbezogene Kritik prüft ausdrücklich monotone/repetitive Begleitung, Textur, Register, Dynamik und Spannungsverlauf. Praktischer Test von 0.8.13 noch ausstehend. |
+| Composition Engine | wibem1/Composition-Engine | 2.4.0, main | 2.4.0 | CURRENT TEST CANDIDATE. Analyse und freigegebene Verbesserung sind jetzt allgemeine Engine-Fähigkeiten; Komposition/Analyse bleiben leistungsorientiert, technische Übersetzung und freigegebene Änderungsumsetzung nutzen providerabhängig niedrige Reasoning-Stufe. Letzter praktisch bestätigter musikalischer Stand bleibt separat zu bewerten. Runtime: af0c0d3; Tests: 257feef. |
+| Minimal Composer | wibem1/Minimal-Composer | 0.8.16, main | zentrale 2.4.0 | CURRENT TEST CANDIDATE. App: 2af3289; Cache: 471641a. Analyse und Verbesserungsumsetzung verwenden jetzt die zentralen Engine-Fähigkeiten statt app-lokaler Prompts. Praktischer Test von 0.8.16 noch ausstehend. |
 | Music Chat Lab | wibem1/Music-Chat-Lab | 1.9.4, main | zentrale stabile Engine | CURRENT CODE. App: 79ea942; Cache: eaa5f8e. Praktischer 1.9.4-Runtime-Test noch nicht als SAFE dokumentiert. |
 | Composition Lab Native | wibem1/Composition-Lab-Native | 3.5.3 Build 3503, main | lokaler Port 2.3.1, Build 231 | CURRENT TEST CANDIDATE. main ist die eindeutige aktuelle Entwicklungsline. Ehemalige 6.1.1/Build-94-Linie als `reference-v6.1.1-build94` erhalten. Praktischer Test ausstehend. |
 | Composition Studio | wibem1/Composition-Studio | 1.0.4, main | lokale 2.3.1, Build 231 | CURRENT. Einzige aktive Update-Linie auf main; keine parallele Nutzerinstallation. Direkte Komposition → technische Übersetzung. Praktischer REAPER-Test von 1.0.4 noch nicht als SAFE dokumentiert. |
@@ -44,7 +44,7 @@ Bei jeder Testversion:
 
 Das produktive REAPER-Script ist verifiziert und in das aktive Repository wibem1/Composition-Studio migriert. Aktueller Runtime-Stand: Composition Studio 1.0.4 mit lokaler Composition Engine 2.3.1 Build 231. Das fruehere MiniDAW-Projekt ist separat archiviert. Das ehemalige Repository wibem1/Reaper-Composition wurde nach verifizierter Migration am 2026-09-26 geloescht.
 
-## Architekturvertrag Composition Engine 2.3.1
+## Architekturvertrag Composition Engine 2.4.0
 
 Für Anwendungen, die 2.3.1 verwenden:
 Kompositionsauftrag → freie vollständige Komposition → rein technische werkgetreue Übersetzung → optional kurze Beschreibung danach.
