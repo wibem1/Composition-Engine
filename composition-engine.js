@@ -1,7 +1,7 @@
 (()=>{'use strict';
 
 const ENGINE_NAME='Composition Engine';
-const ENGINE_VERSION='2.13.0';
+const ENGINE_VERSION='2.13.1';
 
 const COMPOSITION_CONTRACT=`KOMPAKTES PARTITURFORMAT:\nH|["Titel",BPM,Zähler,Nenner]\nV|["Instrument",Program,Channel]\nB|Takt|[[Position,Dauer,Pitch,Velocity],...]\nDanach weitere B-Zeilen oder eine neue V-Zeile. Jede Zeile ist abgeschlossen. Takt beginnt bei 1; Position und Dauer in Viertelnoten-Einheiten. Pausen sind Lücken. Notennamen werden nicht zusätzlich ausgegeben.`
 const TECHNICAL_CONTRACT=COMPOSITION_CONTRACT;
@@ -188,7 +188,7 @@ function providerName(p){return p==='anthropic'?'Anthropic / Claude':p==='google
 function localDescription(draft){const lines=String(draft||'').split(/\r?\n/).map(s=>s.trim()).filter(Boolean);const prose=lines.find(s=>!/^([#*\-]|Titel\s*:|Tonart\s*:|Tempo\s*:|Taktart\s*:|Form\s*:)/i.test(s)&&s.length>35);return String(prose||'').replace(/[*#]/g,'').slice(0,500).trim()}
 function compositionProfile(snapshot,score,draft,description){const bpm=Number(score?.bpm)||null,key=String(score?.key||score?.keySignature||score?.tonality||draftField(draft,'Tonart')||'').trim(),tempo=String(score?.tempo||score?.tempoMarking||draftField(draft,'Tempo')||'').trim(),bars=scoreBarCount(score),provider=providerName(snapshot?.provider),model=String(snapshot?.model||'').trim();const fields=[bpm?bpm+' BPM':'',tempo,key,bars+' Takte',[provider,model].filter(Boolean).join(' · ')].filter(Boolean);return{bpm,tempo,key,barCount:bars,provider,model,description:String(description||'').trim(),text:fields.join(' · ')+'\n\n'+String(description||'').trim()}}
 async function compose({snapshot,key,repeatOf=null,seriesId=null,runId,now,requestModel,usedTitles=[]}){
- const startedAt=now(),run={id:runId,testId:runId,schema:'composition-engine-2.7-diagnosis-v1',app:{name:'Composition Engine Client',version:ENGINE_VERSION},seriesId,startedAt,repeatOf,contextMode:'creative-technical-separation',input:{visibleTask:snapshot.visibleTask,provider:snapshot.provider,model:snapshot.model,representation:representationOf(snapshot)},compositionContract:REPRESENTATION_CONTRACTS[representationOf(snapshot)],events:[],aiCalls:[],requestSnapshot:structuredClone(snapshot)};
+ const startedAt=now(),run={id:runId,testId:runId,schema:'composition-engine-2.13-diagnosis-v2',engine:{name:ENGINE_NAME,version:ENGINE_VERSION,build:BUILD},app:{name:'Composition Engine Client',version:ENGINE_VERSION},seriesId,startedAt,repeatOf,contextMode:'creative-technical-separation',input:{visibleTask:snapshot.visibleTask,provider:snapshot.provider,model:snapshot.model,representation:representationOf(snapshot)},compositionContract:REPRESENTATION_CONTRACTS[representationOf(snapshot)],events:[],aiCalls:[],requestSnapshot:structuredClone(snapshot)};
  const ev=(phase,data={})=>run.events.push({at:now(),phase,...data});
  ev('run_started',{note:'Kreative Komposition und technische Realisation sind strikt getrennt. Die komponierende Instanz erhält keinen technischen Ausgabeformatvertrag.'});
  const call=async(prompt,stage)=>requestModel({snapshot,key,promptText:prompt,stage,run,event:ev});
@@ -203,7 +203,7 @@ async function compose({snapshot,key,repeatOf=null,seriesId=null,runId,now,reque
  }
  run.composition=rawComposition;run.parsedModelJson=obj;run.score=score;
  if(score?.lilypondSource)run.lilypondSource=score.lilypondSource;
- run.representation={requested:representationOf(snapshot),parsed:parsedFormat};ev('composition_realized',{changed:true,representation:parsedFormat,note:'Die zweite Instanz realisiert ausschließlich technisch; sie erhält ausdrücklich kein Mandat zur Neukomposition.'});
+ run.representation={requested:representationOf(snapshot),parsed:parsedFormat};run.technicalSource={format:parsedFormat,lilypondCharacters:String(run.lilypondSource||'').length,compositionCharacters:String(rawComposition||'').length};ev('composition_realized',{changed:true,representation:parsedFormat,note:'Die zweite Instanz realisiert ausschließlich technisch; sie erhält ausdrücklich kein Mandat zur Neukomposition.'});
  const title=String(score?.title||'').trim(),allTitles=usedTitles.filter(Boolean);if(title&&allTitles.some(t=>String(t).toLocaleLowerCase('de-DE')===title.toLocaleLowerCase('de-DE'))){let nt=(await call(duplicateTitlePrompt(title,allTitles,rawComposition),'title_renaming')).trim().replace(/^Titel:\\s*/i,'').replace(/^['“”"]|['“”"]$/g,'').trim();if(!nt||allTitles.some(t=>String(t).toLocaleLowerCase('de-DE')===nt.toLocaleLowerCase('de-DE'))){let n=2;while(allTitles.some(t=>String(t).toLocaleLowerCase('de-DE')===(title+' ('+n+')').toLocaleLowerCase('de-DE')))n++;nt=title+' ('+n+')'}score.title=nt;ev('duplicate_title_replaced',{oldTitle:title,newTitle:nt})}
  const midiBytes=buildMidi(score),buf=midiBytes.buffer.slice(midiBytes.byteOffset,midiBytes.byteOffset+midiBytes.byteLength),midiHash=await sha256Buffer(buf);run.midi={bytes:midiBytes.byteLength,sha256:midiHash,note:'Deterministisch lokal direkt aus der kreativen Quellpartitur erzeugt; kein KI-Übersetzungsschritt.'};ev('midi_generated',{bytes:midiBytes.byteLength,sha256:midiHash});
  const analysisSource=score?.lilypondSource||((parsedFormat==='abc'||parsedFormat==='midi'||parsedFormat==='compact')?rawComposition:JSON.stringify(scoreToCompact(score)));
