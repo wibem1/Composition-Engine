@@ -131,3 +131,15 @@ assert.ok(ox.some(e=>e.type==='articulation'&&e.kind==='staccato'),'staccato mus
 assert.ok(ox.some(e=>e.type==='slur'&&e.phase==='start')&&ox.some(e=>e.type==='slur'&&e.phase==='stop'),'slur boundaries must survive');
 assert.ok(ox.some(e=>e.type==='fermata'),'fermata must survive as symbolic performance data');
 console.log('ABC symbolic expression preservation: OK');
+
+const oxScore=engine.parseCompositionRepresentation(ornaments,'abc').score;
+assert.ok(engine.exportABC(oxScore).includes('!trill!')&&engine.exportABC(oxScore).includes('{B}'),'ABC export must preserve original trill and grace notation');
+const xml=engine.exportMusicXML(oxScore);
+assert.ok(xml.includes('<trill-mark/>'),'MusicXML must preserve trill');
+assert.ok(xml.includes('<staccato/>'),'MusicXML must preserve staccato');
+assert.ok(xml.includes('<slur type="start"/>')&&xml.includes('<slur type="stop"/>'),'MusicXML must preserve slurs');
+assert.ok(xml.includes('<fermata/>'),'MusicXML must preserve fermata');
+assert.ok(xml.includes('<dynamics><p/></dynamics>'),'MusicXML must preserve written dynamics');
+const ensemble={title:'Ensemble',bpm:80,timeSignature:[4,4],tracks:[{name:'Cello',program:42,channel:0,notes:[[0,1,48,70]],expressions:[]},{name:'Piano',program:0,channel:1,notes:[[0,1,60,80]],expressions:[]}]};
+const exml=engine.exportMusicXML(ensemble);assert.ok(exml.includes('id="P1"')&&exml.includes('id="P2"')&&exml.includes('<midi-program>43</midi-program>'),'MusicXML must export every instrument and correct 1-based MIDI program');
+console.log('Expressive ABC/MusicXML export: OK');
