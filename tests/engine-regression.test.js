@@ -4,7 +4,7 @@ const sandbox={window:{},crypto:require('crypto').webcrypto,TextEncoder,structur
 sandbox.globalThis=sandbox.window;
 vm.createContext(sandbox);vm.runInContext(source,sandbox);
 const engine=sandbox.window.CompositionEngine;
-assert.strictEqual(engine.version,'2.10.0');
+assert.strictEqual(engine.version,'2.10.1');
 assert.ok(engine.representations.compact&&engine.representations.abc&&engine.representations.midi&&engine.representations.free);
 
 const compact='H|["Test",96,4,4]\nV|["Piano",0,0]\nB|1|[[0,1,60,72],[1,1,64,76]]';
@@ -35,7 +35,7 @@ assert.ok(pABC.includes('ABC-NOTATION'));assert.ok(pMIDI.includes('960 PPQ'));as
 assert.strictEqual(typeof engine.analyzeScore,'function');assert.strictEqual(typeof engine.improveScore,'function');
 assert.ok(source.includes("contextMode:'single-creative-source'"));assert.ok(!source.includes("'midi_translation'"));
 assert.ok(source.includes("const analysisSource=(parsedFormat==='abc'||parsedFormat==='midi'||parsedFormat==='compact')?rawComposition:JSON.stringify(scoreToCompact(score));"));
-console.log('Composition Engine 2.10.0 regression tests: OK');
+console.log('Composition Engine 2.10.1 regression tests: OK');
 
 const abc=`X:1
 T:Three voices
@@ -58,3 +58,27 @@ assert.deepStrictEqual(Array.from(parsed.tracks,t=>t.program),[40,0,0]);
 assert.deepStrictEqual(Array.from(parsed.tracks,t=>t.notes[0][0]),[0,0,0]);
 assert.deepStrictEqual(Array.from(parsed.tracks,t=>t.notes[0][2]),[69,69,45]);
 console.log('Engine-owned ABC multi-voice regression: OK');
+
+const decorated=`X:1
+T:Decorations
+M:4/4
+L:1/8
+K:Dm
+V:Vln name="Violine" clef=treble
+V:RH name="Klavier" clef=treble
+V:LH name="Klavier" clef=bass
+[V:Vln]
+!p!d2 f2 a2 g2 | !mf!d2 f2 a2 g2 | !<(!g2 f2 e2 d2 | !<)! !pp!f2 e2 d4 |
+[V:RH]
+[df]2 [fa]2 [ad']2 [fa]2 | [df]2 [fa]2 [ad']2 [fa]2 | [df]2 [fa]2 [ad']2 [fa]2 | [df]2 [fa]2 [ad']2 [fa]2 |
+[V:LH]
+D,2 A,2 D,2 A,2 | D,2 A,2 D,2 A,2 | D,2 A,2 D,2 A,2 | D,2 A,2 D,4 |`;
+const ds=engine.parseCompositionRepresentation(decorated,'abc').score;
+assert.strictEqual(ds.barCount,4,'ABC decorations must not create phantom notes or extra bars');
+assert.strictEqual(ds.tracks.length,3);
+assert.deepStrictEqual(Array.from(ds.tracks,t=>Math.max(...t.notes.map(n=>n[0]+n[1]))),[16,16,16]);
+assert.strictEqual(ds.tracks[0].notes[0][3],50);
+assert.strictEqual(ds.tracks[0].notes[4][3],78);
+assert.strictEqual(ds.tracks[0].notes.at(-1)[3],38);
+assert.strictEqual(ds.tracks[1].notes[0][3],78,'dynamics must not leak between voices');
+console.log('ABC decorations and per-voice dynamics: OK');
