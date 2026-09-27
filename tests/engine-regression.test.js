@@ -143,3 +143,12 @@ assert.ok(xml.includes('<dynamics><p/></dynamics>'),'MusicXML must preserve writ
 const ensemble={title:'Ensemble',bpm:80,timeSignature:[4,4],tracks:[{name:'Cello',program:42,channel:0,notes:[[0,1,48,70]],expressions:[]},{name:'Piano',program:0,channel:1,notes:[[0,1,60,80]],expressions:[]}]};
 const exml=engine.exportMusicXML(ensemble);assert.ok(exml.includes('id="P1"')&&exml.includes('id="P2"')&&exml.includes('<midi-program>43</midi-program>'),'MusicXML must export every instrument and correct 1-based MIDI program');
 console.log('Expressive ABC/MusicXML export: OK');
+
+const playSrc={title:'Playback',bpm:120,timeSignature:[4,4],tracks:[{name:'Cello',program:42,channel:0,notes:[[1,1,60,100]],cc:[[0,11,64],[0,64,127],[3,64,0]],pitchBend:[],expressions:[{type:'grace',at:1,pitches:[59]},{type:'ornament',at:1,kind:'trill'},{type:'fermata',at:1}]}]};
+const ps=engine.playbackScore(playSrc),pt=ps.tracks[0];
+assert.ok(pt.notes.length>2,'playback must realize grace note and trill as sounding events');
+assert.ok(pt.notes.some(n=>n[0]<1&&n[2]===59),'grace note must sound before its principal note');
+assert.ok(pt.notes.some(n=>n[2]===62),'trill must alternate with upper neighbor');
+assert.ok(pt.notes.find(n=>n[0]===1&&n[2]===60)[3]<100,'CC11 must affect playback expression');
+assert.ok(pt.notes.find(n=>n[0]===1&&n[2]===60)[1]>1,'pedal/fermata must extend playback duration');
+console.log('Expressive playback realization: OK');
