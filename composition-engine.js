@@ -1,7 +1,7 @@
 (()=>{'use strict';
 
 const ENGINE_NAME='Composition Engine';
-const ENGINE_VERSION='2.12.0';
+const ENGINE_VERSION='2.13.0';
 
 const COMPOSITION_CONTRACT=`KOMPAKTES PARTITURFORMAT:\nH|["Titel",BPM,Zähler,Nenner]\nV|["Instrument",Program,Channel]\nB|Takt|[[Position,Dauer,Pitch,Velocity],...]\nDanach weitere B-Zeilen oder eine neue V-Zeile. Jede Zeile ist abgeschlossen. Takt beginnt bei 1; Position und Dauer in Viertelnoten-Einheiten. Pausen sind Lücken. Notennamen werden nicht zusätzlich ausgegeben.`
 const TECHNICAL_CONTRACT=COMPOSITION_CONTRACT;
@@ -15,14 +15,17 @@ V|["Instrument",Program,Channel]
 N|StartTick|DauerTicks|Pitch|Velocity
 Optional: C|Tick|Controller|Wert
 Danach weitere N-/C-Zeilen oder eine neue V-Zeile. StartTick und Dauer sind frei auf 960 Ticks pro Viertelnote aufgelöst; keine Quantisierung auf Notenwerte.`,
- free:`Wähle selbst diejenige der drei Repräsentationen, in der du diese Musik am besten komponieren kannst: COMPACT, ABC oder MIDI.
-Beginne exakt mit FORMAT|COMPACT, FORMAT|ABC oder FORMAT|MIDI und gib danach ausschließlich die vollständige Komposition im gewählten Format aus.
-COMPACT:
-${COMPOSITION_CONTRACT}
-ABC:
-vollständige gültige ABC-Notation mit X:, T:, M:, L:, Q:, K: und bei Bedarf V:-Stimmen; Instrumente eindeutig benennen und musikalisch sinnvolle Dynamik, Artikulation, Bindebögen, Phrasierung und Spielanweisungen notieren.
-MIDI:
-MIDI-PERFORMANCE-TEXT mit H|, V|, N|StartTick|DauerTicks|Pitch|Velocity sowie optional C|Tick|Controller|Wert, T|Tick|BPM und P|Tick|Wert; 960 PPQ.`
+ free:`TECHNISCHES AUSGABEPAKET — LILYPOND + MIDI:
+Die musikalische Fassung ist bereits fertig komponiert. Übertrage sie NICHT neu, sondern korrigiere nur technische Notationsfehler und realisiere sie vollständig.
+
+Beginne exakt mit:
+FORMAT|LILYPOND+MIDI
+LILYPOND
+Danach vollständiger, kompilierbarer LilyPond-Quelltext. Verwende \version "2.24.0". Prüfe insbesondere Taktfüllung, Stimmen, Bindungen, Dynamik, Instrumentenregister und bei \relative-Notation jede Oktavmarkierung. Extreme Register dürfen nur erhalten bleiben, wenn sie aus der musikalischen Vorlage eindeutig beabsichtigt sind; korrigiere offensichtlich technische Oktavfehler ohne die Musik neu zu komponieren.
+Danach eine eigene Zeile:
+MIDI
+Danach MIDI-PERFORMANCE-TEXT mit H|, V| und N|StartTick|DauerTicks|Pitch|Velocity, optional C|Tick|Controller|Wert, T|Tick|BPM und P|Tick|Wert; 960 PPQ. MIDI muss exakt dieselbe Musik wie die LilyPond-Fassung wiedergeben.
+Keine Erklärung außerhalb dieser beiden Blöcke.`
 });
 function representationOf(snapshot){const r=String(snapshot?.representation||'compact').toLowerCase();return REPRESENTATION_CONTRACTS[r]?r:'compact'}
 function createPrompts(snapshot,composition=''){
@@ -47,6 +50,7 @@ function postImprovementAnalysisPrompt(improvedScore){return 'Beurteile diese Pa
 async function analyzeScore({score,snapshot,key,requestModel,run=null,event=null}){if(!score)throw new Error('Keine Partitur für die Analyse.');if(typeof requestModel!=='function')throw new Error('requestModel fehlt.');const promptText=criticalAnalysisPrompt(score),text=conciseAssessment(await requestModel({snapshot,key,promptText,stage:'critical_score_analysis',run,event}));return{assessment:text,unchanged:/^\\s*URTEIL:\\s*BEHALTEN\\b/im.test(text),promptText}}
 async function analyzeImprovement({improvedScore,snapshot,key,requestModel,run=null,event=null}){if(!improvedScore)throw new Error('Verbesserungsfassung fehlt.');if(typeof requestModel!=='function')throw new Error('requestModel fehlt.');const promptText=postImprovementAnalysisPrompt(improvedScore),text=conciseAssessment(await requestModel({snapshot,key,promptText,stage:'post_improvement_analysis',run,event}));return{assessment:text,unchanged:/^\\s*URTEIL:\\s*BEHALTEN\\b/im.test(text),promptText}}
 function exportABC(score){if(score?.abcSource)return String(score.abcSource).trim();return''}
+function exportLilyPond(score){if(score?.lilypondSource)return String(score.lilypondSource).trim();return''}
 function exportMusicXML(score){
  if(!score)return'';const esc=x=>String(x??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');const div=960,ts=Array.isArray(score.timeSignature)?score.timeSignature:[4,4],bar=(Number(ts[0])||4)*4/(Number(ts[1])||4),pcs=[['C',0],['C',1],['D',0],['D',1],['E',0],['F',0],['F',1],['G',0],['G',1],['A',0],['A',1],['B',0]],px=m=>{m=Math.round(Number(m)||60);const x=pcs[(m%12+12)%12];return'<pitch><step>'+x[0]+'</step>'+(x[1]?'<alter>'+x[1]+'</alter>':'')+'<octave>'+(Math.floor(m/12)-1)+'</octave></pitch>'},tracks=score.tracks||[];
  let out='<?xml version="1.0" encoding="UTF-8"?><score-partwise version="4.0"><work><work-title>'+esc(score.title||'Komposition')+'</work-title></work><part-list>'+tracks.map((t,i)=>'<score-part id="P'+(i+1)+'"><part-name>'+esc(t.name||('Track '+(i+1)))+'</part-name><midi-instrument id="P'+(i+1)+'-I1"><midi-channel>'+((Number(t.channel)||i)%16+1)+'</midi-channel><midi-program>'+((Number(t.program)||0)+1)+'</midi-program></midi-instrument></score-part>').join('')+'</part-list>';
@@ -151,7 +155,17 @@ function parseABC(text){
 }
 function parseCompositionRepresentation(text,representation){
  let raw=String(text||'').trim(),r=representationOf({representation});
- if(r==='free'){const m=raw.match(/^FORMAT\|(COMPACT|ABC|MIDI)\s*\n?/i);if(!m)throw new Error('Freie Wahl ohne FORMAT-Kennung.');r=m[1].toLowerCase();raw=raw.slice(m[0].length).trim()}
+ if(r==='free'){
+  const pkg=raw.match(/^FORMAT\|LILYPOND\+MIDI\s*\nLILYPOND\s*\n([\s\S]*?)\nMIDI\s*\n([\s\S]+)$/i);
+  if(pkg){
+    const lilypondSource=String(pkg[1]||'').trim().replace(/^\`\`\`(?:lilypond|ly)?\s*/i,'').replace(/\s*\`\`\`$/,'').trim();
+    const midiSource=String(pkg[2]||'').trim().replace(/^\`\`\`(?:text|midi)?\s*/i,'').replace(/\s*\`\`\`$/,'').trim();
+    if(!/^\\version\s+"/m.test(lilypondSource))throw new Error('LilyPond-Block ohne \\version.');
+    const score=extractMidiPerformanceScore(midiSource);score.lilypondSource=lilypondSource;
+    return{score,format:'lilypond+midi',raw,lilypondSource,midiSource};
+  }
+  const m=raw.match(/^FORMAT\|(COMPACT|ABC|MIDI)\s*\n?/i);if(!m)throw new Error('FREE-Ausgabe ohne gültiges technisches Formatpaket.');r=m[1].toLowerCase();raw=raw.slice(m[0].length).trim()
+}
  if(r==='compact'){if(/^\s*H\|/.test(raw))return{score:extractCompactScore(raw),format:'compact',raw};const obj=extractJson(raw);return{score:findScore(obj),format:'compact-json',raw,obj}}
  if(r==='midi')return{score:extractMidiPerformanceScore(raw),format:'midi',raw};
  if(r==='abc'){return{score:parseABC(raw),format:'abc',raw}}
@@ -187,13 +201,15 @@ async function compose({snapshot,key,repeatOf=null,seriesId=null,runId,now,reque
    run.composition=rawComposition;run.rawCompositionOnError=rawComposition;ev('composition_format_invalid',{message:e?.message||String(e),characters:rawComposition.length,rawComposition});
    throw new Error('Die technische Realisation der bereits komponierten Musik ist nicht vollständig lesbar: '+(e?.message||String(e)));
  }
- run.composition=rawComposition;run.parsedModelJson=obj;run.score=score;run.representation={requested:representationOf(snapshot),parsed:parsedFormat};ev('composition_realized',{changed:true,representation:parsedFormat,note:'Die zweite Instanz realisiert ausschließlich technisch; sie erhält ausdrücklich kein Mandat zur Neukomposition.'});
+ run.composition=rawComposition;run.parsedModelJson=obj;run.score=score;
+ if(score?.lilypondSource)run.lilypondSource=score.lilypondSource;
+ run.representation={requested:representationOf(snapshot),parsed:parsedFormat};ev('composition_realized',{changed:true,representation:parsedFormat,note:'Die zweite Instanz realisiert ausschließlich technisch; sie erhält ausdrücklich kein Mandat zur Neukomposition.'});
  const title=String(score?.title||'').trim(),allTitles=usedTitles.filter(Boolean);if(title&&allTitles.some(t=>String(t).toLocaleLowerCase('de-DE')===title.toLocaleLowerCase('de-DE'))){let nt=(await call(duplicateTitlePrompt(title,allTitles,rawComposition),'title_renaming')).trim().replace(/^Titel:\\s*/i,'').replace(/^['“”"]|['“”"]$/g,'').trim();if(!nt||allTitles.some(t=>String(t).toLocaleLowerCase('de-DE')===nt.toLocaleLowerCase('de-DE'))){let n=2;while(allTitles.some(t=>String(t).toLocaleLowerCase('de-DE')===(title+' ('+n+')').toLocaleLowerCase('de-DE')))n++;nt=title+' ('+n+')'}score.title=nt;ev('duplicate_title_replaced',{oldTitle:title,newTitle:nt})}
  const midiBytes=buildMidi(score),buf=midiBytes.buffer.slice(midiBytes.byteOffset,midiBytes.byteOffset+midiBytes.byteLength),midiHash=await sha256Buffer(buf);run.midi={bytes:midiBytes.byteLength,sha256:midiHash,note:'Deterministisch lokal direkt aus der kreativen Quellpartitur erzeugt; kein KI-Übersetzungsschritt.'};ev('midi_generated',{bytes:midiBytes.byteLength,sha256:midiHash});
- const analysisSource=(parsedFormat==='abc'||parsedFormat==='midi'||parsedFormat==='compact')?rawComposition:JSON.stringify(scoreToCompact(score));
+ const analysisSource=score?.lilypondSource||((parsedFormat==='abc'||parsedFormat==='midi'||parsedFormat==='compact')?rawComposition:JSON.stringify(scoreToCompact(score)));
  let idea='';try{idea=String(await call(createPrompts(snapshot,analysisSource).compositionIdea,'composition_analysis_afterwards')||'').trim()}catch(e){ev('composition_analysis_failed',{message:e?.message||String(e)})}run.idea=idea;run.profile=compositionProfile(snapshot,score,'',idea);ev('composition_profile_created',{bpm:run.profile.bpm,tempo:run.profile.tempo,key:run.profile.key,barCount:run.profile.barCount,provider:run.profile.provider,model:run.profile.model});run.completedAt=now();run.status='ok';
  return{run,midiBytes};
 }
 
-window.CompositionEngine=Object.freeze({name:ENGINE_NAME,version:ENGINE_VERSION,representations:REPRESENTATION_CONTRACTS,compose,analyzeScore,analyzeImprovement,improveScore,COMPOSITION_CONTRACT,TECHNICAL_CONTRACT,createPrompts,criticalAnalysisPrompt,postImprovementAnalysisPrompt,approvedImprovementPrompt,scoreToCompact,exportABC,exportMusicXML,playbackScore,performanceSnapshot,expressionAudit,mergeTitleRegistry,duplicateTitlePrompt,makeRequest,actualRequest,extractText,extractJson,findScore,findIdea,sha256Text,sha256Buffer,buildMidi,parseABC,extractCompactScore,extractMidiPerformanceScore,parseCompositionRepresentation});
+window.CompositionEngine=Object.freeze({name:ENGINE_NAME,version:ENGINE_VERSION,representations:REPRESENTATION_CONTRACTS,compose,analyzeScore,analyzeImprovement,improveScore,COMPOSITION_CONTRACT,TECHNICAL_CONTRACT,createPrompts,criticalAnalysisPrompt,postImprovementAnalysisPrompt,approvedImprovementPrompt,scoreToCompact,exportABC,exportLilyPond,exportMusicXML,playbackScore,performanceSnapshot,expressionAudit,mergeTitleRegistry,duplicateTitlePrompt,makeRequest,actualRequest,extractText,extractJson,findScore,findIdea,sha256Text,sha256Buffer,buildMidi,parseABC,extractCompactScore,extractMidiPerformanceScore,parseCompositionRepresentation});
 })();
