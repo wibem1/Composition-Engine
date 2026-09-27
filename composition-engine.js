@@ -100,7 +100,7 @@ function abcChannelForVoice(index,program){let ch=index%16;if(ch===9)ch=(ch+1)%1
 function parseABC(text){
  text=String(text||'').replace(/\r/g,'');const tuneStarts=[];for(const m of text.matchAll(/^X:\s*[^\n]+/gm))tuneStarts.push(m.index);if(tuneStarts.length>1)text=text.slice(tuneStarts[0],tuneStarts[1]).trim();
  const lines=text.split('\n');let title='ABC Import',meter=[4,4],unit=1/8,bpm=120,keyName='C',curV='V1';const voices=new Map(),voiceNames=new Map(),voicePrograms=new Map();let body=[];
- const ensure=v=>{if(!voices.has(v))voices.set(v,[])};
+ const voiceExpressions=new Map();const ensure=v=>{if(!voices.has(v))voices.set(v,[]);if(!voiceExpressions.has(v))voiceExpressions.set(v,[])};const expr=(v,type,at,data={})=>{ensure(v);voiceExpressions.get(v).push({type,at:Number(at)||0,...data})};
  for(let raw of lines){let line=raw.replace(/%.*/,'').trim();if(!line)continue;let m;
   if((m=line.match(/^T:\s*(.*)/)))title=m[1].trim()||title;
   else if((m=line.match(/^M:\s*(\d+)\/(\d+)/)))meter=[+m[1],+m[2]];
@@ -124,9 +124,9 @@ function parseABC(text){
    if(/\s/.test(line[i])){i++;continue}
    if(line[i]==='"'){const e=line.indexOf('"',i+1);i=e>=0?e+1:line.length;continue}
    const iv=line.slice(i).match(/^\[V:([^\]]+)\]/);if(iv){v=iv[1];ensure(v);if(!pos.has(v)){pos.set(v,0);accs.set(v,{});dynamics.set(v,78);slurDepth.set(v,0)}i+=iv[0].length;continue}
-   const decoration=line.slice(i).match(/^([!+])([^!+]*?)\1/);if(decoration){let d=decoration[2].toLowerCase().trim();if(Object.prototype.hasOwnProperty.call(dynLevel,d))dynamics.set(v,dynLevel[d]);else if(/^(?:crescendo|cresc\.?|<)\($/.test(d))setHair(v,1);else if(/^(?:diminuendo|dim\.?|decresc\.?|>)\($/.test(d))setHair(v,-1);else if(/[<>]\)$/.test(d)||/^(?:crescendo|cresc\.?|diminuendo|dim\.?|decresc\.?)\)$/.test(d))endHair(v);else if(/^(?:accent|marcato|sf|sforzando)$/.test(d))articulation.set(v,'accent');else if(/^staccatissimo$/.test(d))articulation.set(v,'staccatissimo');else if(/^staccato$/.test(d))articulation.set(v,'staccato');else if(/^tenuto$/.test(d))articulation.set(v,'tenuto');i+=decoration[0].length;continue}
-   if(line[i]==='('){slurDepth.set(v,(slurDepth.get(v)||0)+1);i++;continue}if(line[i]===')'){slurDepth.set(v,Math.max(0,(slurDepth.get(v)||0)-1));i++;continue}
-   if(line[i]==='.'&&/^[\^_=]*[A-Ga-g]/.test(line.slice(i+1))){articulation.set(v,'staccato');i++;continue}
+   const decoration=line.slice(i).match(/^([!+])([^!+]*?)\1/);if(decoration){let d=decoration[2].toLowerCase().trim();if(Object.prototype.hasOwnProperty.call(dynLevel,d)){dynamics.set(v,dynLevel[d]);expr(v,'dynamic',pos.get(v),{mark:d,value:dynLevel[d]})}else if(/^(?:crescendo|cresc\.?|<)\($/.test(d)){setHair(v,1);expr(v,'hairpin',pos.get(v),{direction:'crescendo',phase:'start'})}else if(/^(?:diminuendo|dim\.?|decresc\.?|>)\($/.test(d)){setHair(v,-1);expr(v,'hairpin',pos.get(v),{direction:'diminuendo',phase:'start'})}else if(/[<>]\)$/.test(d)||/^(?:crescendo|cresc\.?|diminuendo|dim\.?|decresc\.?)\)$/.test(d)){endHair(v);expr(v,'hairpin',pos.get(v),{phase:'stop'})}else if(/^(?:accent|marcato|sf|sforzando)$/.test(d)){articulation.set(v,'accent');expr(v,'articulation',pos.get(v),{kind:d})}else if(/^staccatissimo$/.test(d)){articulation.set(v,'staccatissimo');expr(v,'articulation',pos.get(v),{kind:d})}else if(/^staccato$/.test(d)){articulation.set(v,'staccato');expr(v,'articulation',pos.get(v),{kind:d})}else if(/^tenuto$/.test(d)){articulation.set(v,'tenuto');expr(v,'articulation',pos.get(v),{kind:d})}else if(/^(?:trill|trill\(|mordent|uppermordent|lowermordent|turn|invertedturn)$/.test(d)){expr(v,'ornament',pos.get(v),{kind:d.replace(/\($/,'')})}else if(/^(?:fermata|hold)$/.test(d)){expr(v,'fermata',pos.get(v),{})}else{expr(v,'direction',pos.get(v),{text:d})}i+=decoration[0].length;continue}
+   if(line[i]==='('){slurDepth.set(v,(slurDepth.get(v)||0)+1);expr(v,'slur',pos.get(v),{phase:'start'});i++;continue}if(line[i]===')'){slurDepth.set(v,Math.max(0,(slurDepth.get(v)||0)-1));expr(v,'slur',pos.get(v),{phase:'stop'});i++;continue}
+   if(line[i]==='.'&&/^[\^_=]*[A-Ga-g]/.test(line.slice(i+1))){articulation.set(v,'staccato');expr(v,'articulation',pos.get(v),{kind:'staccato'});i++;continue}if(line[i]==='{'){const e=line.indexOf('}',i+1);if(e>i){const toks=line.slice(i+1,e).match(/[\^_=]*[A-Ga-g][,']*/g)||[];const pitches=toks.map(t=>pitch(t,key,accs.get(v))).filter(Number.isFinite);expr(v,'grace',pos.get(v),{pitches});i=e+1;continue}}
    if(line[i]==='|'){accs.set(v,{});i++;while(i<line.length&&/[:|\[\]]/.test(line[i]))i++;continue}
    const rest=line.slice(i).match(/^[zx](\d*\/\d+|\/\d+|\/|\d+)?/);if(rest){pos.set(v,pos.get(v)+frac(rest[1],unit*4));i+=rest[0].length;continue}
    if(line[i]==='['&&!/^\[V:/.test(line.slice(i))){const end=line.indexOf(']',i);if(end>i){const inside=line.slice(i+1,end),lm=line.slice(end+1).match(/^(\d*\/\d+|\/\d+|\/|\d+)?/),d=frac(lm?.[1],unit*4),tokens=inside.match(/[\^_=]*[A-Ga-g][,']*/g)||[],vel=noteVelocity(v),pd=performedDuration(v,d);for(const t of tokens){const p=pitch(t,key,accs.get(v));if(p!=null)voices.get(v).push([pos.get(v),pd,p,articulation.get(v)==='accent'?Math.min(127,vel+20):vel])}pos.set(v,pos.get(v)+d);i=end+1+(lm?.[0]?.length||0);continue}}
@@ -134,7 +134,7 @@ function parseABC(text){
    i++
   }
  }
- const tracks=[...voices.entries()].map(([id,notes],i)=>{const name=voiceNames.get(id)||id,program=voicePrograms.has(id)?voicePrograms.get(id):abcProgramForVoice(name);return{name,program,channel:abcChannelForVoice(i,program),notes}}).filter(t=>t.notes.length);
+ const tracks=[...voices.entries()].map(([id,notes],i)=>{const name=voiceNames.get(id)||id,program=voicePrograms.has(id)?voicePrograms.get(id):abcProgramForVoice(name);return{name,program,channel:abcChannelForVoice(i,program),notes,expressions:voiceExpressions.get(id)||[]}}).filter(t=>t.notes.length);
  if(!tracks.length)throw new Error('Keine unterstützten ABC-Noten gefunden.');
  return{title,bpm,timeSignature:meter,tracks,abcSource:text,importedFrom:'ABC',barCount:Math.max(1,Math.ceil(Math.max(...tracks.flatMap(t=>t.notes.map(n=>n[0]+n[1])))/bar))}
 }
