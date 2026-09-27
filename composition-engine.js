@@ -173,7 +173,7 @@ async function composeSourceRepresentation({snapshot,key,repeatOf=null,seriesId=
  const ev=(phase,data={})=>run.events.push({at:now(),phase,...data}),call=async(prompt,stage)=>requestModel({snapshot,key,promptText:prompt,stage,run,event:ev});
  if(representation!=='lilypond'){
   ev('run_started',{note:'FREE bleibt freie Quellkomposition ohne erzwungene technische Zweitdarstellung.'});
-  const source=String(await call('AUFTRAG:\\n'+snapshot.visibleTask+'\\n\\nKomponiere das Werk jetzt vollständig als Musik. Triff alle musikalischen Entscheidungen frei nach dem Auftrag.\\n\\n'+REPRESENTATION_CONTRACTS.free,'musical_composition')||'').trim();
+  const transparentPrompt=[String(snapshot.generalInfo||''),String(snapshot.visibleTask||'')].filter(text=>text.length>0).join('\\n\\n');\n  const source=String(await call(transparentPrompt,'musical_composition')||'').trim();
   if(!source)throw new Error('Die musikalische Komposition ist leer.');
   run.originalMusicalComposition=source;run.musicalComposition=source;run.composition=source;run.representation={requested:'free',parsed:'free-source'};run.sourceOnly=true;run.score=null;run.idea='';run.profile={bpm:null,tempo:'',key:'',barCount:null,provider:providerName(snapshot?.provider),model:String(snapshot?.model||''),description:'',text:[providerName(snapshot?.provider),String(snapshot?.model||'')].filter(Boolean).join(' · ')};run.completedAt=now();run.status='ok';ev('musical_composition_completed',{representation:'free-source',characters:source.length,aiCalls:1});return{run,midiBytes:null};
  }
