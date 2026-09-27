@@ -116,3 +116,18 @@ assert.ok(hasSeq([176,64,127])&&hasSeq([176,64,0]),'MIDI export must preserve su
 assert.ok(hasSeq([224,0,80])&&hasSeq([224,0,64]),'MIDI export must preserve pitch bend and reset');
 assert.ok(perfBytes.filter((v,i)=>v===255&&perfBytes[i+1]===81&&perfBytes[i+2]===3).length>=2,'MIDI export must preserve tempo changes');
 console.log('MIDI expressive performance export: OK');
+
+const ornaments=`X:1
+T:Ornaments
+M:4/4
+L:1/8
+K:C
+V:Cello name="Violoncello"
+[V:Cello] !p!{B}c2 !trill!d2 .e2 (f2 g2) | !fermata!a4 z4 |`;
+const os=engine.parseCompositionRepresentation(ornaments,'abc').score, ox=os.tracks[0].expressions;
+assert.ok(ox.some(e=>e.type==='grace'&&e.pitches.length===1),'grace notes must survive as symbolic performance data');
+assert.ok(ox.some(e=>e.type==='ornament'&&e.kind==='trill'),'trill must survive as symbolic performance data');
+assert.ok(ox.some(e=>e.type==='articulation'&&e.kind==='staccato'),'staccato must survive as symbolic performance data');
+assert.ok(ox.some(e=>e.type==='slur'&&e.phase==='start')&&ox.some(e=>e.type==='slur'&&e.phase==='stop'),'slur boundaries must survive');
+assert.ok(ox.some(e=>e.type==='fermata'),'fermata must survive as symbolic performance data');
+console.log('ABC symbolic expression preservation: OK');
