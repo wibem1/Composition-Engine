@@ -5,10 +5,10 @@
   "engines": [
     {
       "id": "stable-current",
-      "label": "Aktuelle freigegebene Engine 2.11.0",
-      "version": "2.11.0",
+      "label": "Aktuelle Test-Engine 2.12.0",
+      "version": "2.12.0",
       "url": "composition-engine.js",
-      "channel": "stable",
+      "channel": "test",
       "archived": false
     },
     {
