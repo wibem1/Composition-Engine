@@ -91,7 +91,7 @@ function abcVelocityMap(raw){
  const begin=dir=>{hairpin={dir,startIndex:events.length,startVelocity:velocity}};
  const finish=()=>{if(!hairpin)return;const count=events.length-hairpin.startIndex;if(count>0){const delta=hairpin.dir*(count<=2?8:count<=4?12:count<=8?18:24),target=Math.max(28,Math.min(122,hairpin.startVelocity+delta));for(let i=0;i<count;i++){const q=(i+1)/count;events[hairpin.startIndex+i]=Math.round(hairpin.startVelocity+(target-hairpin.startVelocity)*q)}velocity=target}hairpin=null};
  let m;while((m=tokenRe.exec(String(raw||'')))){
-  const deco=String(m[1]||m[2]||'').toLowerCase().trim();
+  const deco=String(m[1]||m[2]||'').toLowerCase().trim().replace(/[()]/g,'');
   if(deco){
    if(Object.prototype.hasOwnProperty.call(marks,deco)){finish();velocity=marks[deco];continue}
    if(/^(crescendo|cresc\.?|<)$/.test(deco)){finish();begin(1);continue}
