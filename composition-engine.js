@@ -1,8 +1,8 @@
 (()=>{'use strict';
 
 const ENGINE_NAME='Composition Engine';
-const ENGINE_VERSION='2.20.0';
-const BUILD=22000;
+const ENGINE_VERSION='2.20.1';
+const BUILD=22001;
 
 const COMPOSITION_CONTRACT=`KOMPAKTES PARTITURFORMAT:\nH|["Titel",BPM,Zähler,Nenner]\nV|["Instrument",Program,Channel]\nB|Takt|[[Position,Dauer,Pitch,Velocity],...]\nDanach weitere B-Zeilen oder eine neue V-Zeile. Jede Zeile ist abgeschlossen. Takt beginnt bei 1; Position und Dauer in Viertelnoten-Einheiten. Pausen sind Lücken. Notennamen werden nicht zusätzlich ausgegeben.`
 const TECHNICAL_CONTRACT=COMPOSITION_CONTRACT;
@@ -68,7 +68,9 @@ function extractCompactScore(text){
   if(line.startsWith('H|')){const h=JSON.parse(line.slice(2));if(!Array.isArray(h)||h.length<4)throw new Error('Ungültige H-Zeile.');head=h;continue}
   if(line.startsWith('V|')){const v=JSON.parse(line.slice(2));if(!Array.isArray(v)||v.length<3)throw new Error('Ungültige V-Zeile.');current={name:String(v[0]||('Track '+(tracks.length+1))),program:Number(v[1])||0,channel:Number.isFinite(Number(v[2]))?Number(v[2]):tracks.length,notes:[]};tracks.push(current);continue}
   if(line.startsWith('B|')){if(!current)throw new Error('B-Zeile ohne V-Zeile.');const p=line.indexOf('|',2),bar=Number(line.slice(2,p)),events=JSON.parse(line.slice(p+1));if(!Number.isInteger(bar)||bar<1||!Array.isArray(events))throw new Error('Ungültige B-Zeile.');current._bars=current._bars||[];current._bars.push([bar,events]);continue}
-  throw new Error('Unbekannte Partiturzeile.');
+  // Text außerhalb des definierten Kompaktformats ist kein Partiturdatensatz.
+  // Nur H|, V| und B| werden ausgewertet; malformed format lines above still fail explicitly.
+  continue;
  }
  if(!head||!tracks.length)throw new Error('Unvollständiges kompaktes Partiturformat.');
  const ts=[Number(head[2])||4,Number(head[3])||4],beats=ts[0]*(4/ts[1]);
