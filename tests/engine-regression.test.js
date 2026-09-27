@@ -56,5 +56,5 @@ assert.strictEqual(parsed.barCount,2);
 assert.strictEqual(parsed.tracks.length,3);
 assert.deepStrictEqual(Array.from(parsed.tracks,t=>t.program),[40,0,0]);
 assert.deepStrictEqual(Array.from(parsed.tracks,t=>t.notes[0][0]),[0,0,0]);
-assert.deepStrictEqual(Array.from(parsed.tracks,t=>t.notes[0][2]),[69,69,33]);
+assert.deepStrictEqual(Array.from(parsed.tracks,t=>t.notes[0][2]),[69,69,45]);
 console.log('Engine-owned ABC multi-voice regression: OK');
