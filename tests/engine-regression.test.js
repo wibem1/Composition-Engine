@@ -72,7 +72,7 @@ V:LH name="Klavier" clef=bass
 [V:RH]
 [df]2 [fa]2 [ad']2 [fa]2 | [df]2 [fa]2 [ad']2 [fa]2 | [df]2 [fa]2 [ad']2 [fa]2 | [df]2 [fa]2 [ad']2 [fa]2 |
 [V:LH]
-D,2 A,2 D,2 A,2 | D,2 A,2 D,2 A,2 | D,2 A,2 D,2 A,2 | D,2 A,2 D,4 |`;
+D,2 A,2 D,2 A,2 | D,2 A,2 D,2 A,2 | D,2 A,2 D,2 A,2 | D,2 A,2 D,2 A,2 |`;
 const ds=engine.parseCompositionRepresentation(decorated,'abc').score;
 assert.strictEqual(ds.barCount,4,'ABC decorations must not create phantom notes or extra bars');
 assert.strictEqual(ds.tracks.length,3);
