@@ -1,7 +1,7 @@
 (()=>{'use strict';
 
 const ENGINE_NAME='Composition Engine';
-const ENGINE_VERSION='2.16.2';
+const ENGINE_VERSION='2.17.0';
 
 const COMPOSITION_CONTRACT=`KOMPAKTES PARTITURFORMAT:\nH|["Titel",BPM,Zähler,Nenner]\nV|["Instrument",Program,Channel]\nB|Takt|[[Position,Dauer,Pitch,Velocity],...]\nDanach weitere B-Zeilen oder eine neue V-Zeile. Jede Zeile ist abgeschlossen. Takt beginnt bei 1; Position und Dauer in Viertelnoten-Einheiten. Pausen sind Lücken. Notennamen werden nicht zusätzlich ausgegeben.`
 const TECHNICAL_CONTRACT=COMPOSITION_CONTRACT;
@@ -175,7 +175,13 @@ async function composeSourceRepresentation({snapshot,key,repeatOf=null,seriesId=
  const source=String(await call('AUFTRAG:\\n'+snapshot.visibleTask+'\\n\\nKomponiere das Werk jetzt vollständig als Musik. Triff alle musikalischen Entscheidungen frei nach dem Auftrag.'+formatInstruction,'musical_composition')||'').trim();
  if(!source)throw new Error('Die musikalische Komposition ist leer.');
  let lilypondSource='';{const start=source.indexOf('\\\\version')>=0?source.indexOf('\\\\version'):source.indexOf('\\version');if(start>=0)lilypondSource=source.slice(start).replace(/\`\`\`\\s*$/,'').trim()}if(representation==='lilypond'&&!lilypondSource){lilypondSource=source.replace(/^\`\`\`[^\\n]*\\n?/,'').replace(/\`\`\`\\s*$/,'').trim();ev('lilypond_version_marker_missing',{note:'Ausgabe wird als LilyPond-Quelle bewahrt; Notation Tool/LilyPond übernimmt die Syntaxprüfung.'})}
- run.musicalComposition=source;run.composition=source;run.lilypondSource=lilypondSource||undefined;run.representation={requested:representation,parsed:lilypondSource?'lilypond':'free-source'};ev('musical_composition_completed',{representation:run.representation.parsed,characters:source.length});
+ run.originalMusicalComposition=source;
+ if(representation==='lilypond'){
+  const reviewPrompt='Prüfe die folgende bereits fertig komponierte LilyPond-Partitur ausschließlich technisch. Ändere weder Form, Harmonik, Rhythmus, Melodie, Besetzung noch musikalischen Ausdruck. Korrigiere nur LilyPond-/Notationsfehler, insbesondere falsche Oktavlagen durch \\relative/Apostrophe oder Kommata, unspielbar extreme Register, fehlerhafte Klammern/Bindungen und andere Syntax- oder Satzfehler. Erhalte Titel, Taktzahl und musikalischen Inhalt. Gib ausschließlich den vollständigen korrigierten LilyPond-Quelltext aus, beginnend mit \\version.\\n\\nLILYPOND-ORIGINAL:\\n'+lilypondSource;
+  const reviewed=String(await call(reviewPrompt,'lilypond_technical_review')||'').trim();
+  if(reviewed){const a=reviewed.indexOf('\\\\version')>=0?reviewed.indexOf('\\\\version'):reviewed.indexOf('\\version');const cleaned=(a>=0?reviewed.slice(a):reviewed).replace(/\`\`\`\\s*$/,'').trim();if(cleaned){lilypondSource=cleaned;ev('lilypond_technical_review_completed',{characters:cleaned.length})}}
+ }
+ run.musicalComposition=lilypondSource||source;run.composition=run.musicalComposition;run.lilypondSource=lilypondSource||undefined;run.representation={requested:representation,parsed:lilypondSource?'lilypond':'free-source'};ev('musical_composition_completed',{representation:run.representation.parsed,characters:run.musicalComposition.length});
  let midiBytes=null,score=null;
  if(representation==='lilypond'){
   const midiPrompt='Erzeuge aus der folgenden bereits fertig komponierten LilyPond-Partitur ausschließlich eine klanglich und zeitlich getreue MIDI-Wiedergabefassung. Komponiere NICHT neu. Die LilyPond-Partitur bleibt das maßgebliche Original.\\n\\nLILYPOND-ORIGINAL:\\n'+lilypondSource+'\\n\\nAUSGABEFORMAT:\\n'+REPRESENTATION_CONTRACTS.midi;
