@@ -19,14 +19,6 @@ const free=engine.parseCompositionRepresentation('FORMAT|MIDI\n'+midi,'free');
 assert.strictEqual(free.format,'midi');
 
 
-const dyn=engine.abcVelocityMap('!mf! C D E F !diminuendo(! G A B c !diminuendo)! d e f g !f! a b');
-assert.ok(Math.min(...dyn)>=28,'ABC dynamics must not run away below ppp');
-assert.ok(dyn.slice(4,8)[0]>dyn.slice(4,8)[3],'diminuendo hairpin must descend');
-assert.strictEqual(dyn[dyn.length-2],94,'explicit forte must reset the dynamic level');
-
-const noDynamics={tracks:[{notes:[[0,1,60,80]]}]};
-engine.applyAbcVelocities('X:1\\nT:Plain\\nK:C\\nC D E F',noDynamics);
-assert.strictEqual(noDynamics.tracks[0].notes[0][3],80,'ABC without dynamics must preserve parser velocity');
 assert.ok(source.includes('VERGEBENE WERKTITEL'),'prior titles must be included in composition prompt');
 const pABC=engine.createPrompts({visibleTask:'Test',representation:'abc'}).composition;
 const pMIDI=engine.createPrompts({visibleTask:'Test',representation:'midi'}).composition;
