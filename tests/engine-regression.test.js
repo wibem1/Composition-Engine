@@ -4,7 +4,7 @@ const sandbox={window:{},crypto:require('crypto').webcrypto,TextEncoder,structur
 sandbox.globalThis=sandbox.window;
 vm.createContext(sandbox);vm.runInContext(source,sandbox);
 const engine=sandbox.window.CompositionEngine;
-assert.strictEqual(engine.version,'2.11.0');
+assert.strictEqual(engine.version,'2.11.1');
 assert.ok(engine.representations.compact&&engine.representations.abc&&engine.representations.midi&&engine.representations.free);
 
 const compact='H|["Test",96,4,4]\nV|["Piano",0,0]\nB|1|[[0,1,60,72],[1,1,64,76]]';
@@ -27,7 +27,7 @@ assert.ok(pABC.includes('ABC-NOTATION'));assert.ok(pMIDI.includes('960 PPQ'));as
 assert.strictEqual(typeof engine.analyzeScore,'function');assert.strictEqual(typeof engine.improveScore,'function');
 assert.ok(source.includes("contextMode:'single-creative-source'"));assert.ok(!source.includes("'midi_translation'"));
 assert.ok(source.includes("const analysisSource=(parsedFormat==='abc'||parsedFormat==='midi'||parsedFormat==='compact')?rawComposition:JSON.stringify(scoreToCompact(score));"));
-console.log('Composition Engine 2.11.0 consolidated regression tests: OK');
+console.log('Composition Engine 2.11.1 consolidated regression tests: OK');
 
 const abc=`X:1
 T:Three voices
@@ -107,3 +107,12 @@ V:Cello name="Violoncello"
 const qs=engine.parseCompositionRepresentation(quoted,'abc').score;
 assert.strictEqual(qs.tracks[0].notes.length,4,'quoted text/chord annotations must never become phantom notes');
 console.log('ABC quoted annotation regression: OK');
+
+const perf=engine.parseCompositionRepresentation('H|["Expressive",120,4,4]\nV|["Cello",42,0]\nN|0|960|60|70\nC|0|11|55\nC|960|64|127\nC|1920|64|0\nP|480|2048\nP|960|0\nT|1920|90','midi').score;
+const perfBytes=Array.from(engine.buildMidi(perf));
+const hasSeq=(a)=>perfBytes.some((_,i)=>a.every((v,j)=>perfBytes[i+j]===v));
+assert.ok(hasSeq([176,11,55]),'MIDI export must preserve expression CC11');
+assert.ok(hasSeq([176,64,127])&&hasSeq([176,64,0]),'MIDI export must preserve sustain pedal CC64');
+assert.ok(hasSeq([224,0,80])&&hasSeq([224,0,64]),'MIDI export must preserve pitch bend and reset');
+assert.ok(perfBytes.filter((v,i)=>v===255&&perfBytes[i+1]===81&&perfBytes[i+2]===3).length>=2,'MIDI export must preserve tempo changes');
+console.log('MIDI expressive performance export: OK');
