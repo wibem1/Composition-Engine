@@ -1,7 +1,7 @@
 (()=>{'use strict';
 
 const ENGINE_NAME='Composition Engine';
-const ENGINE_VERSION='2.13.1';
+const ENGINE_VERSION='2.14.0';
 
 const COMPOSITION_CONTRACT=`KOMPAKTES PARTITURFORMAT:\nH|["Titel",BPM,Zähler,Nenner]\nV|["Instrument",Program,Channel]\nB|Takt|[[Position,Dauer,Pitch,Velocity],...]\nDanach weitere B-Zeilen oder eine neue V-Zeile. Jede Zeile ist abgeschlossen. Takt beginnt bei 1; Position und Dauer in Viertelnoten-Einheiten. Pausen sind Lücken. Notennamen werden nicht zusätzlich ausgegeben.`
 const TECHNICAL_CONTRACT=COMPOSITION_CONTRACT;
@@ -15,24 +15,18 @@ V|["Instrument",Program,Channel]
 N|StartTick|DauerTicks|Pitch|Velocity
 Optional: C|Tick|Controller|Wert
 Danach weitere N-/C-Zeilen oder eine neue V-Zeile. StartTick und Dauer sind frei auf 960 Ticks pro Viertelnote aufgelöst; keine Quantisierung auf Notenwerte.`,
- free:`TECHNISCHES AUSGABEPAKET — LILYPOND + MIDI:
-Die musikalische Fassung ist bereits fertig komponiert. Übertrage sie NICHT neu, sondern korrigiere nur technische Notationsfehler und realisiere sie vollständig.
-
-Beginne exakt mit:
-FORMAT|LILYPOND+MIDI
-LILYPOND
-Danach vollständiger, kompilierbarer LilyPond-Quelltext. Verwende \version "2.24.0". Prüfe insbesondere Taktfüllung, Stimmen, Bindungen, Dynamik, Instrumentenregister und bei \relative-Notation jede Oktavmarkierung. Extreme Register dürfen nur erhalten bleiben, wenn sie aus der musikalischen Vorlage eindeutig beabsichtigt sind; korrigiere offensichtlich technische Oktavfehler ohne die Musik neu zu komponieren.
-Danach eine eigene Zeile:
-MIDI
-Danach MIDI-PERFORMANCE-TEXT mit H|, V| und N|StartTick|DauerTicks|Pitch|Velocity, optional C|Tick|Controller|Wert, T|Tick|BPM und P|Tick|Wert; 960 PPQ. MIDI muss exakt dieselbe Musik wie die LilyPond-Fassung wiedergeben.
-Keine Erklärung außerhalb dieser beiden Blöcke.`
+ lilypond:`LILYPOND-NOTATION:
+Gib ausschließlich vollständigen, kompilierbaren LilyPond-Quelltext aus. Verwende \\version "2.24.0". Erhalte die musikalische Komposition vollständig mit Stimmen, Dynamik, Artikulation, Phrasierung, Tempo- und Ausdrucksangaben. Keine Erklärung außerhalb des LilyPond-Quelltexts.`,
+ free:`FREIE REPRÄSENTATION:
+Wähle selbst die musikalische Darstellung, die für diese Komposition am geeignetsten ist. Es gibt keine Vorgabe für ABC, LilyPond, Compact oder MIDI und keine nachträgliche Zwangskonvertierung in ein anderes Notationsformat.`
 });
 function representationOf(snapshot){const r=String(snapshot?.representation||'compact').toLowerCase();return REPRESENTATION_CONTRACTS[r]?r:'compact'}
 function createPrompts(snapshot,composition=''){
  const representation=representationOf(snapshot),contract=REPRESENTATION_CONTRACTS[representation];
+ const compositionFormat=representation==='free'?'Wähle die musikalische Darstellung selbst; es gibt keinerlei Formatvorgabe.':('Verwende bereits beim Komponieren dieses verbindliche Ausgabeformat:\\n'+contract);
  return{
-  composition:'AUFTRAG:\n'+snapshot.visibleTask+'\n\nKomponiere das Werk jetzt vollständig als Musik. Triff alle musikalischen Entscheidungen frei nach dem Auftrag. Gib die vollständig auskomponierte musikalische Fassung in der musikalischen Darstellung aus, die dir für das Komponieren selbst am natürlichsten ist.',
-  realization:'Übertrage die folgende bereits vollständig komponierte Musik so getreu wie möglich in das verlangte technische Ausgabeformat. Komponiere NICHT neu. Vereinfache, regularisiere oder verschönere die Musik NICHT. Erhalte insbesondere Tonhöhen, Rhythmen, Pausen, Stimmen, Phrasierung, Dynamik, Artikulation, Verzierungen, Tempo- und Ausdrucksangaben, soweit das Zielformat sie darstellen kann. Wenn etwas nicht direkt darstellbar ist, bewahre die musikalische Bedeutung so vollständig wie möglich.\\n\\nBEREITS FERTIG KOMPONIERTE MUSIK:\\n'+composition+'\\n\\nTECHNISCHES ZIELFORMAT:\\n'+contract,
+  composition:'AUFTRAG:\\n'+snapshot.visibleTask+'\\n\\nKomponiere das Werk jetzt vollständig als Musik. Triff alle musikalischen Entscheidungen frei nach dem Auftrag. '+compositionFormat,
+  realization:representation==='free'?composition:'Übertrage die folgende bereits vollständig komponierte Musik so getreu wie möglich in das verlangte technische Ausgabeformat. Komponiere NICHT neu. Vereinfache, regularisiere oder verschönere die Musik NICHT. Erhalte insbesondere Tonhöhen, Rhythmen, Pausen, Stimmen, Phrasierung, Dynamik, Artikulation, Verzierungen, Tempo- und Ausdrucksangaben, soweit das Zielformat sie darstellen kann. Wenn etwas nicht direkt darstellbar ist, bewahre die musikalische Bedeutung so vollständig wie möglich.\\n\\nBEREITS FERTIG KOMPONIERTE MUSIK:\\n'+composition+'\\n\\nTECHNISCHES ZIELFORMAT:\\n'+contract,
   compositionIdea:'Beschreibe die bereits fertig komponierte Partitur konkret, differenziert und hörbezogen. Erfasse nur Eigenschaften, die aus der tatsächlichen Partitur hervorgehen. Etwa 500 bis 900 Zeichen, höchstens 900 Zeichen. Keine Bewertung, keine Verbesserungsvorschläge und keine Wiederholung des Auftrags.\\n\\nFERTIGE PARTITUR:\\n'+composition
  };
 }
@@ -156,19 +150,21 @@ function parseABC(text){
 function parseCompositionRepresentation(text,representation){
  let raw=String(text||'').trim(),r=representationOf({representation});
  if(r==='free'){
-  const pkg=raw.match(/^FORMAT\|LILYPOND\+MIDI\s*\nLILYPOND\s*\n([\s\S]*?)\nMIDI\s*\n([\s\S]+)$/i);
-  if(pkg){
-    const lilypondSource=String(pkg[1]||'').trim().replace(/^\`\`\`(?:lilypond|ly)?\s*/i,'').replace(/\s*\`\`\`$/,'').trim();
-    const midiSource=String(pkg[2]||'').trim().replace(/^\`\`\`(?:text|midi)?\s*/i,'').replace(/\s*\`\`\`$/,'').trim();
-    if(!/^\\version\s+"/m.test(lilypondSource))throw new Error('LilyPond-Block ohne \\version.');
-    const score=extractMidiPerformanceScore(midiSource);score.lilypondSource=lilypondSource;
-    return{score,format:'lilypond+midi',raw,lilypondSource,midiSource};
-  }
-  const m=raw.match(/^FORMAT\|(COMPACT|ABC|MIDI)\s*\n?/i);if(!m)throw new Error('FREE-Ausgabe ohne gültiges technisches Formatpaket.');r=m[1].toLowerCase();raw=raw.slice(m[0].length).trim()
-}
- if(r==='compact'){if(/^\s*H\|/.test(raw))return{score:extractCompactScore(raw),format:'compact',raw};const obj=extractJson(raw);return{score:findScore(obj),format:'compact-json',raw,obj}}
+   const fenced=raw.match(/\`\`\`(lilypond|ly|abc)?\\s*([\\s\\S]*?)\`\`\`/i);
+   const body=fenced?fenced[2].trim():raw;
+   const lang=(fenced?.[1]||'').toLowerCase();
+   if(lang==='lilypond'||lang==='ly'||/^\\\\version\\s+"/m.test(body))return{score:{title:'',bpm:120,timeSignature:[4,4],tracks:[],lilypondSource:body},format:'lilypond',raw,lilypondSource:body};
+   if(lang==='abc'||/^X:\\s*\\S+/m.test(body))return{score:parseABC(body),format:'abc',raw};
+   return{score:null,format:'free',raw,freeSource:raw};
+ }
+ if(r==='lilypond'){
+   const body=raw.replace(/^\`\`\`(?:lilypond|ly)?\\s*/i,'').replace(/\\s*\`\`\`$/,'').trim();
+   if(!/^\\\\version\\s+"/m.test(body))throw new Error('LilyPond-Ausgabe ohne \\\\version.');
+   return{score:{title:'',bpm:120,timeSignature:[4,4],tracks:[],lilypondSource:body},format:'lilypond',raw,lilypondSource:body};
+ }
+ if(r==='compact'){if(/^\\s*H\\|/.test(raw))return{score:extractCompactScore(raw),format:'compact',raw};const obj=extractJson(raw);return{score:findScore(obj),format:'compact-json',raw,obj}}
  if(r==='midi')return{score:extractMidiPerformanceScore(raw),format:'midi',raw};
- if(r==='abc'){return{score:parseABC(raw),format:'abc',raw}}
+ if(r==='abc')return{score:parseABC(raw),format:'abc',raw};
  throw new Error('Unbekannte Musikrepräsentation.');
 }
 function extractJson(text){let s=String(text||'').trim().replace(/^\`\`\`(?:json)?\s*/i,'').replace(/\s*\`\`\`$/,'').trim();const parse=x=>JSON.parse(normalizeJsonNumbers(x));try{return parse(s)}catch(_){const closed=closeCompleteScoreJson(s);if(closed)return parse(closed);const a=s.indexOf('{'),b=s.lastIndexOf('}');if(a>=0&&b>a)return parse(s.slice(a,b+1));throw _}}
