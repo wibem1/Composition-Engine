@@ -105,7 +105,7 @@ function abcVelocityMap(raw){
  finish();return events;
 }
 function applyAbcVelocities(raw,score){
- const velocities=abcVelocityMap(raw);if(!velocities.length)return score;
+ if(!/!(?:ppp|pp|p|mp|mf|f|ff|fff|sfz|ffz|fp|crescendo|diminuendo|cresc\.?|dim\.?|decresc\.?)!|\+(?:ppp|pp|p|mp|mf|f|ff|fff|sfz|ffz|fp|crescendo|diminuendo)\+/i.test(String(raw||'')))return score;const velocities=abcVelocityMap(raw);if(!velocities.length)return score;
  const notes=[];for(const tr of(score?.tracks||[]))for(const n of(tr.notes||[]))notes.push(n);
  notes.sort((a,b)=>(Number(a?.[0])||0)-(Number(b?.[0])||0));
  for(let i=0;i<notes.length&&i<velocities.length;i++)if(Array.isArray(notes[i])&&notes[i].length>=4)notes[i][3]=velocities[i];
