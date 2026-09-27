@@ -4,7 +4,7 @@ const sandbox={window:{},crypto:require('crypto').webcrypto,TextEncoder,structur
 sandbox.globalThis=sandbox.window;
 vm.createContext(sandbox);vm.runInContext(source,sandbox);
 const engine=sandbox.window.CompositionEngine;
-assert.strictEqual(engine.version,'2.9.1');
+assert.strictEqual(engine.version,'2.9.2');
 assert.ok(engine.representations.compact&&engine.representations.abc&&engine.representations.midi&&engine.representations.free);
 
 const compact='H|["Test",96,4,4]\nV|["Piano",0,0]\nB|1|[[0,1,60,72],[1,1,64,76]]';
@@ -24,6 +24,10 @@ assert.ok(Math.min(...dyn)>=28,'ABC dynamics must not run away below ppp');
 assert.ok(dyn.slice(4,8)[0]>dyn.slice(4,8)[3],'diminuendo hairpin must descend');
 assert.strictEqual(dyn[dyn.length-2],94,'explicit forte must reset the dynamic level');
 
+const noDynamics={tracks:[{notes:[[0,1,60,80]]}]};
+engine.applyAbcVelocities('X:1\\nT:Plain\\nK:C\\nC D E F',noDynamics);
+assert.strictEqual(noDynamics.tracks[0].notes[0][3],80,'ABC without dynamics must preserve parser velocity');
+assert.ok(source.includes('VERGEBENE WERKTITEL'),'prior titles must be included in composition prompt');
 const pABC=engine.createPrompts({visibleTask:'Test',representation:'abc'}).composition;
 const pMIDI=engine.createPrompts({visibleTask:'Test',representation:'midi'}).composition;
 const pFree=engine.createPrompts({visibleTask:'Test',representation:'free'}).composition;
@@ -31,4 +35,4 @@ assert.ok(pABC.includes('ABC-NOTATION'));assert.ok(pMIDI.includes('960 PPQ'));as
 assert.strictEqual(typeof engine.analyzeScore,'function');assert.strictEqual(typeof engine.improveScore,'function');
 assert.ok(source.includes("contextMode:'single-creative-source'"));assert.ok(!source.includes("'midi_translation'"));
 assert.ok(source.includes("const analysisSource=(parsedFormat==='abc'||parsedFormat==='midi'||parsedFormat==='compact')?rawComposition:JSON.stringify(scoreToCompact(score));"));
-console.log('Composition Engine 2.9.1 regression tests: OK');
+console.log('Composition Engine 2.9.2 regression tests: OK');
