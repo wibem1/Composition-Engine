@@ -1,7 +1,7 @@
 (()=>{'use strict';
 
 const ENGINE_NAME='Composition Engine';
-const ENGINE_VERSION='2.15.1';
+const ENGINE_VERSION='2.15.2';
 
 const COMPOSITION_CONTRACT=`KOMPAKTES PARTITURFORMAT:\nH|["Titel",BPM,Zähler,Nenner]\nV|["Instrument",Program,Channel]\nB|Takt|[[Position,Dauer,Pitch,Velocity],...]\nDanach weitere B-Zeilen oder eine neue V-Zeile. Jede Zeile ist abgeschlossen. Takt beginnt bei 1; Position und Dauer in Viertelnoten-Einheiten. Pausen sind Lücken. Notennamen werden nicht zusätzlich ausgegeben.`
 const TECHNICAL_CONTRACT=COMPOSITION_CONTRACT;
@@ -174,7 +174,7 @@ async function composeSourceRepresentation({snapshot,key,repeatOf=null,seriesId=
  const contract=REPRESENTATION_CONTRACTS[representation],formatInstruction=representation==='lilypond'?('\\n\\nVERBINDLICHES AUSGABEFORMAT:\\n'+contract):('\\n\\n'+contract);
  const source=String(await call('AUFTRAG:\\n'+snapshot.visibleTask+'\\n\\nKomponiere das Werk jetzt vollständig als Musik. Triff alle musikalischen Entscheidungen frei nach dem Auftrag.'+formatInstruction,'musical_composition')||'').trim();
  if(!source)throw new Error('Die musikalische Komposition ist leer.');
- let lilypondSource='';if(representation==='lilypond'){lilypondSource=source.replace(/^\`\`\`(?:lilypond|ly)?\\s*/i,'').replace(/\\s*\`\`\`$/,'').trim();if(!/^\\\\version\\s+"/m.test(lilypondSource))throw new Error('LilyPond-Ausgabe ohne \\\\version.')}else{const f=source.match(/\`\`\`(?:lilypond|ly)\\s*([\\s\\S]*?)\`\`\`/i);if(f)lilypondSource=f[1].trim();else{const i=source.search(/^\\\\version\\s+"/m);if(i>=0)lilypondSource=source.slice(i).trim()}}
+ let lilypondSource='';if(representation==='lilypond'){lilypondSource=source.replace(/^\`\`\`(?:lilypond|ly)?\\s*/i,'').replace(/\\s*\`\`\`$/,'').trim();if(!/^\\version\s+"/m.test(lilypondSource))throw new Error('LilyPond-Ausgabe ohne \\\\version.')}else{const f=source.match(/\`\`\`(?:lilypond|ly)\\s*([\\s\\S]*?)\`\`\`/i);if(f)lilypondSource=f[1].trim();else{const i=source.search(/^\\version\s+"/m);if(i>=0)lilypondSource=source.slice(i).trim()}}
  run.musicalComposition=source;run.composition=source;run.lilypondSource=lilypondSource||undefined;run.representation={requested:representation,parsed:lilypondSource?'lilypond':'free-source'};run.sourceOnly=true;ev('musical_composition_completed',{representation:run.representation.parsed,characters:source.length});
  let idea='';try{idea=String(await call(createPrompts(snapshot,source).compositionIdea,'composition_analysis_afterwards')||'').trim()}catch(e){ev('composition_analysis_failed',{message:e?.message||String(e)})}run.idea=idea;run.profile={bpm:null,tempo:'',key:'',barCount:null,provider:providerName(snapshot?.provider),model:String(snapshot?.model||''),description:idea,text:[providerName(snapshot?.provider),String(snapshot?.model||'')].filter(Boolean).join(' · ')+'\\n\\n'+idea};run.completedAt=now();run.status='ok';return{run,midiBytes:null};
 }
