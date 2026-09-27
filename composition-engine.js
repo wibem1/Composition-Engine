@@ -1,8 +1,8 @@
 (()=>{'use strict';
 
 const ENGINE_NAME='Composition Engine';
-const ENGINE_VERSION='2.19.0';
-const BUILD=21900;
+const ENGINE_VERSION='2.20.0';
+const BUILD=22000;
 
 const COMPOSITION_CONTRACT=`KOMPAKTES PARTITURFORMAT:\nH|["Titel",BPM,Zähler,Nenner]\nV|["Instrument",Program,Channel]\nB|Takt|[[Position,Dauer,Pitch,Velocity],...]\nDanach weitere B-Zeilen oder eine neue V-Zeile. Jede Zeile ist abgeschlossen. Takt beginnt bei 1; Position und Dauer in Viertelnoten-Einheiten. Pausen sind Lücken. Notennamen werden nicht zusätzlich ausgegeben.`
 const TECHNICAL_CONTRACT=COMPOSITION_CONTRACT;
@@ -169,7 +169,7 @@ function providerName(p){return p==='anthropic'?'Anthropic / Claude':p==='google
 function localDescription(draft){const lines=String(draft||'').split(/\r?\n/).map(s=>s.trim()).filter(Boolean);const prose=lines.find(s=>!/^([#*\-]|Titel\s*:|Tonart\s*:|Tempo\s*:|Taktart\s*:|Form\s*:)/i.test(s)&&s.length>35);return String(prose||'').replace(/[*#]/g,'').slice(0,500).trim()}
 function compositionProfile(snapshot,score,draft,description){const bpm=Number(score?.bpm)||null,key=String(score?.key||score?.keySignature||score?.tonality||draftField(draft,'Tonart')||'').trim(),tempo=String(score?.tempo||score?.tempoMarking||draftField(draft,'Tempo')||'').trim(),bars=scoreBarCount(score),provider=providerName(snapshot?.provider),model=String(snapshot?.model||'').trim();const fields=[bpm?bpm+' BPM':'',tempo,key,bars+' Takte',[provider,model].filter(Boolean).join(' · ')].filter(Boolean);return{bpm,tempo,key,barCount:bars,provider,model,description:String(description||'').trim(),text:fields.join(' · ')+'\n\n'+String(description||'').trim()}}
 async function composeSourceRepresentation({snapshot,key,repeatOf=null,seriesId=null,runId,now,requestModel}){
- const representation=representationOf(snapshot),startedAt=now(),run={id:runId,testId:runId,schema:'composition-engine-2.19-source-v1',app:{name:'Composition Engine Client',version:ENGINE_VERSION},seriesId,startedAt,repeatOf,contextMode:'single-call-dual-representation',input:{visibleTask:snapshot.visibleTask,provider:snapshot.provider,model:snapshot.model,representation},compositionContract:REPRESENTATION_CONTRACTS[representation],events:[],aiCalls:[],requestSnapshot:structuredClone(snapshot)};
+ const representation=representationOf(snapshot),startedAt=now(),run={id:runId,testId:runId,schema:'composition-engine-2.20-transparent-v1',app:{name:'Composition Engine Client',version:ENGINE_VERSION},seriesId,startedAt,repeatOf,contextMode:'transparent-two-field',input:{visibleTask:snapshot.visibleTask,provider:snapshot.provider,model:snapshot.model,representation},compositionContract:REPRESENTATION_CONTRACTS[representation],events:[],aiCalls:[],requestSnapshot:structuredClone(snapshot)};
  const ev=(phase,data={})=>run.events.push({at:now(),phase,...data}),call=async(prompt,stage)=>requestModel({snapshot,key,promptText:prompt,stage,run,event:ev});
  if(representation!=='lilypond'){
   ev('run_started',{note:'FREE bleibt freie Quellkomposition ohne erzwungene technische Zweitdarstellung.'});
