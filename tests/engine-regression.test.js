@@ -4,7 +4,7 @@ const sandbox={window:{},crypto:require('crypto').webcrypto,TextEncoder,structur
 sandbox.globalThis=sandbox.window;
 vm.createContext(sandbox);vm.runInContext(source,sandbox);
 const engine=sandbox.window.CompositionEngine;
-assert.strictEqual(engine.version,'2.19.0');
+assert.strictEqual(engine.version,'2.20.0');
 assert.ok(engine.representations.compact&&engine.representations.abc&&engine.representations.midi&&engine.representations.lilypond&&engine.representations.free);
 
 const compact='H|["Test",96,4,4]\nV|["Piano",0,0]\nB|1|[[0,1,60,72],[1,1,64,76]]';
@@ -25,13 +25,13 @@ assert.ok(creative.includes('vollständig als Musik')&&creative.includes('musika
 const realization=engine.createPrompts({visibleTask:'Test',representation:'abc'},'FERTIGE MUSIK').realization;
 assert.ok(realization.includes('ABC-NOTATION'),'technical realization must receive the selected output contract');
 assert.ok(realization.includes('Komponiere NICHT neu')&&realization.includes('Vereinfache, regularisiere oder verschönere die Musik NICHT'),'realizer must preserve the completed composition');
-assert.ok(source.includes("contextMode:'single-call-dual-representation'"),'LilyPond path must use the single-call dual representation architecture');
+assert.ok(source.includes("contextMode:'transparent-two-field'"),'FREE path must record the transparent two-field architecture');
 assert.ok(source.includes("===LILYPOND===")&&source.includes("===PERFORMANCE==="),'LilyPond path must request both synchronized sections in one response');
 assert.ok(!source.includes("'midi_translation'"),'LilyPond path must not contain a separate AI MIDI translation stage');
 assert.ok(!source.includes("'lilypond_technical_review'"),'LilyPond path must not contain an automatic second AI review stage');
 assert.ok(!source.includes("midi_delegated_to_notation_tool"),'LilyPond MIDI must not be reconstructed by Notation Tools');
 assert.strictEqual(typeof engine.analyzeScore,'function');assert.strictEqual(typeof engine.improveScore,'function');
-console.log('Composition Engine 2.19.0 architecture regression: OK');
+console.log('Composition Engine 2.20.0 transparent-prompt regression: OK');
 
 const abc=`X:1
 T:Three voices
@@ -159,18 +159,15 @@ console.log('Expressive playback realization: OK');
 
 
 (async()=>{
- let calls=0;
+ let calls=0,seenPrompt=null;
  const result=await engine.compose({
-  snapshot:{visibleTask:'Vier Takte für Violine und Klavier',provider:'google',model:'test',representation:'lilypond'},
-  key:'test',runId:'single-call-test',now:()=>new Date(0).toISOString(),usedTitles:[],
-  requestModel:async({stage})=>{calls++;assert.strictEqual(stage,'musical_composition');return '===LILYPOND===\n\\\\version "2.24.0"\n\\\\score { { c\'4 d\' e\' f\' } }\n===PERFORMANCE===\nH|["Single Call",120,4,4]\nV|["Violine",40,0]\nB|1|[[0,1,60,80],[1,1,62,80],[2,1,64,80],[3,1,65,80]]';}
+  snapshot:{provider:'google',model:'gemini-3.8-flash',representation:'free',generalInfo:'ALLGEMEIN',visibleTask:'AUFTRAG'},
+  key:'test',runId:'transparent-two-field-test',now:()=>new Date(0).toISOString(),usedTitles:[],
+  requestModel:async({stage,promptText})=>{calls++;assert.strictEqual(stage,'musical_composition');seenPrompt=promptText;return 'freie musikalische Antwort';}
  });
- assert.strictEqual(calls,1,'LilyPond composition must make exactly one AI call');
- assert.strictEqual(result.run.aiCalls.length,0,'mock requestModel owns call logging; engine must not synthesize extra calls');
- assert.strictEqual(result.run.sourceOnly,false);
- assert.strictEqual(result.run.score.title,'Single Call');
- assert.strictEqual(result.run.score.tracks[0].notes.length,4);
- assert.ok(result.run.lilypondSource.includes('\\\\version'));
- assert.ok(result.midiBytes&&result.midiBytes.length>40,'same-call performance data must produce local MIDI');
- console.log('LilyPond single-call composition + local MIDI regression: OK');
+ assert.strictEqual(calls,1,'transparent FREE composition must make exactly one AI call');
+ assert.strictEqual(seenPrompt,'ALLGEMEIN\\n\\nAUFTRAG','AI prompt must contain only the two visible fields');
+ assert.strictEqual(result.run.sourceOnly,true);
+ assert.strictEqual(result.run.musicalComposition,'freie musikalische Antwort');
+ console.log('Transparent two-field composition regression: OK');
 })().catch(e=>{console.error(e);process.exitCode=1});
