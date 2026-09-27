@@ -1,7 +1,7 @@
 (()=>{'use strict';
 
 const ENGINE_NAME='Composition Engine';
-const ENGINE_VERSION='2.12.0';
+const ENGINE_VERSION='2.15.0';
 
 const COMPOSITION_CONTRACT=`KOMPAKTES PARTITURFORMAT:\nH|["Titel",BPM,Zähler,Nenner]\nV|["Instrument",Program,Channel]\nB|Takt|[[Position,Dauer,Pitch,Velocity],...]\nDanach weitere B-Zeilen oder eine neue V-Zeile. Jede Zeile ist abgeschlossen. Takt beginnt bei 1; Position und Dauer in Viertelnoten-Einheiten. Pausen sind Lücken. Notennamen werden nicht zusätzlich ausgegeben.`
 const TECHNICAL_CONTRACT=COMPOSITION_CONTRACT;
@@ -9,20 +9,13 @@ const REPRESENTATION_CONTRACTS=Object.freeze({
  compact:COMPOSITION_CONTRACT,
  abc:`ABC-NOTATION:
 Gib ausschließlich vollständige, gültige ABC-Notation aus. Verwende X:, T:, M:, L:, Q: und K:. Mehrstimmigkeit mit V:-Stimmen. Benenne Instrumente in den V:-Definitionen eindeutig und verwende bei Bedarf %%score/%%staves. Nutze musikalisch sinnvolle Dynamik (!pp! bis !fff!, Akzente, Crescendo/Diminuendo), Artikulation, Bindebögen, Phrasierung und spieltechnische Anweisungen, wenn sie zum Ausdruck der Komposition beitragen. Keine Erklärung außerhalb der ABC-Notation.`,
- midi:`MIDI-PERFORMANCE-TEXT (960 PPQ):
+ lilypond:`LILYPOND-NOTATION:\nGib ausschließlich vollständigen, kompilierbaren LilyPond-Quelltext aus. Verwende \\version "2.24.0". Die LilyPond-Fassung IST die Komposition; keine zusätzliche technische Übersetzung und keine Erklärung außerhalb des Quelltexts.`,\n midi:`MIDI-PERFORMANCE-TEXT (960 PPQ):
 H|["Titel",BPM,Zähler,Nenner]
 V|["Instrument",Program,Channel]
 N|StartTick|DauerTicks|Pitch|Velocity
 Optional: C|Tick|Controller|Wert
 Danach weitere N-/C-Zeilen oder eine neue V-Zeile. StartTick und Dauer sind frei auf 960 Ticks pro Viertelnote aufgelöst; keine Quantisierung auf Notenwerte.`,
- free:`Wähle selbst diejenige der drei Repräsentationen, in der du diese Musik am besten komponieren kannst: COMPACT, ABC oder MIDI.
-Beginne exakt mit FORMAT|COMPACT, FORMAT|ABC oder FORMAT|MIDI und gib danach ausschließlich die vollständige Komposition im gewählten Format aus.
-COMPACT:
-${COMPOSITION_CONTRACT}
-ABC:
-vollständige gültige ABC-Notation mit X:, T:, M:, L:, Q:, K: und bei Bedarf V:-Stimmen; Instrumente eindeutig benennen und musikalisch sinnvolle Dynamik, Artikulation, Bindebögen, Phrasierung und Spielanweisungen notieren.
-MIDI:
-MIDI-PERFORMANCE-TEXT mit H|, V|, N|StartTick|DauerTicks|Pitch|Velocity sowie optional C|Tick|Controller|Wert, T|Tick|BPM und P|Tick|Wert; 960 PPQ.`
+ free:`FREIE REPRÄSENTATION:\nWähle selbst die musikalische Darstellung, die für die Komposition am geeignetsten ist. Es gibt keinerlei Formatvorgabe. Die gewählte Darstellung IST die Komposition; keine nachträgliche Zwangskonvertierung.`
 });
 function representationOf(snapshot){const r=String(snapshot?.representation||'compact').toLowerCase();return REPRESENTATION_CONTRACTS[r]?r:'compact'}
 function createPrompts(snapshot,composition=''){
@@ -173,7 +166,19 @@ function scoreBarCount(score){const ts=Array.isArray(score?.timeSignature)?score
 function providerName(p){return p==='anthropic'?'Anthropic / Claude':p==='google'?'Google / Gemini':p==='openai'?'OpenAI':String(p||'')}
 function localDescription(draft){const lines=String(draft||'').split(/\r?\n/).map(s=>s.trim()).filter(Boolean);const prose=lines.find(s=>!/^([#*\-]|Titel\s*:|Tonart\s*:|Tempo\s*:|Taktart\s*:|Form\s*:)/i.test(s)&&s.length>35);return String(prose||'').replace(/[*#]/g,'').slice(0,500).trim()}
 function compositionProfile(snapshot,score,draft,description){const bpm=Number(score?.bpm)||null,key=String(score?.key||score?.keySignature||score?.tonality||draftField(draft,'Tonart')||'').trim(),tempo=String(score?.tempo||score?.tempoMarking||draftField(draft,'Tempo')||'').trim(),bars=scoreBarCount(score),provider=providerName(snapshot?.provider),model=String(snapshot?.model||'').trim();const fields=[bpm?bpm+' BPM':'',tempo,key,bars+' Takte',[provider,model].filter(Boolean).join(' · ')].filter(Boolean);return{bpm,tempo,key,barCount:bars,provider,model,description:String(description||'').trim(),text:fields.join(' · ')+'\n\n'+String(description||'').trim()}}
+async function composeSourceRepresentation({snapshot,key,repeatOf=null,seriesId=null,runId,now,requestModel}){
+ const representation=representationOf(snapshot),startedAt=now(),run={id:runId,testId:runId,schema:'composition-engine-2.15-source-v1',app:{name:'Composition Engine Client',version:ENGINE_VERSION},seriesId,startedAt,repeatOf,contextMode:'direct-source-composition',input:{visibleTask:snapshot.visibleTask,provider:snapshot.provider,model:snapshot.model,representation},compositionContract:REPRESENTATION_CONTRACTS[representation],events:[],aiCalls:[],requestSnapshot:structuredClone(snapshot)};
+ const ev=(phase,data={})=>run.events.push({at:now(),phase,...data}),call=async(prompt,stage)=>requestModel({snapshot,key,promptText:prompt,stage,run,event:ev});
+ ev('run_started',{note:'Direkte Quellkomposition ohne internen Score- oder MIDI-Zwangspfad.'});
+ const contract=REPRESENTATION_CONTRACTS[representation],formatInstruction=representation==='lilypond'?('\\n\\nVERBINDLICHES AUSGABEFORMAT:\\n'+contract):('\\n\\n'+contract);
+ const source=String(await call('AUFTRAG:\\n'+snapshot.visibleTask+'\\n\\nKomponiere das Werk jetzt vollständig als Musik. Triff alle musikalischen Entscheidungen frei nach dem Auftrag.'+formatInstruction,'musical_composition')||'').trim();
+ if(!source)throw new Error('Die musikalische Komposition ist leer.');
+ let lilypondSource='';if(representation==='lilypond'){lilypondSource=source.replace(/^\`\`\`(?:lilypond|ly)?\\s*/i,'').replace(/\\s*\`\`\`$/,'').trim();if(!/^\\\\version\\s+"/m.test(lilypondSource))throw new Error('LilyPond-Ausgabe ohne \\\\version.')}else{const f=source.match(/\`\`\`(?:lilypond|ly)\\s*([\\s\\S]*?)\`\`\`/i);if(f)lilypondSource=f[1].trim();else{const i=source.search(/^\\\\version\\s+"/m);if(i>=0)lilypondSource=source.slice(i).trim()}}
+ run.musicalComposition=source;run.composition=source;run.lilypondSource=lilypondSource||undefined;run.representation={requested:representation,parsed:lilypondSource?'lilypond':'free-source'};run.sourceOnly=true;ev('musical_composition_completed',{representation:run.representation.parsed,characters:source.length});
+ let idea='';try{idea=String(await call(createPrompts(snapshot,source).compositionIdea,'composition_analysis_afterwards')||'').trim()}catch(e){ev('composition_analysis_failed',{message:e?.message||String(e)})}run.idea=idea;run.profile={bpm:null,tempo:'',key:'',barCount:null,provider:providerName(snapshot?.provider),model:String(snapshot?.model||''),description:idea,text:[providerName(snapshot?.provider),String(snapshot?.model||'')].filter(Boolean).join(' · ')+'\\n\\n'+idea};run.completedAt=now();run.status='ok';return{run,midiBytes:null};
+}
 async function compose({snapshot,key,repeatOf=null,seriesId=null,runId,now,requestModel,usedTitles=[]}){
+ if(['lilypond','free'].includes(representationOf(snapshot)))return composeSourceRepresentation({snapshot,key,repeatOf,seriesId,runId,now,requestModel});
  const startedAt=now(),run={id:runId,testId:runId,schema:'composition-engine-2.7-diagnosis-v1',app:{name:'Composition Engine Client',version:ENGINE_VERSION},seriesId,startedAt,repeatOf,contextMode:'creative-technical-separation',input:{visibleTask:snapshot.visibleTask,provider:snapshot.provider,model:snapshot.model,representation:representationOf(snapshot)},compositionContract:REPRESENTATION_CONTRACTS[representationOf(snapshot)],events:[],aiCalls:[],requestSnapshot:structuredClone(snapshot)};
  const ev=(phase,data={})=>run.events.push({at:now(),phase,...data});
  ev('run_started',{note:'Kreative Komposition und technische Realisation sind strikt getrennt. Die komponierende Instanz erhält keinen technischen Ausgabeformatvertrag.'});
