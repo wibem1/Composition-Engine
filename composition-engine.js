@@ -93,6 +93,7 @@ function abcVelocityMap(raw){
  let m;while((m=tokenRe.exec(String(raw||'')))){
   const deco=String(m[1]||m[2]||'').toLowerCase().trim().replace(/[()]/g,'');
   if(deco){
+   if(/[)]$/.test(String(m[1]||m[2]||'').trim())&&/^(crescendo|cresc\.?|diminuendo|dim\.?|decresc\.?)$/.test(deco)){finish();continue}
    if(Object.prototype.hasOwnProperty.call(marks,deco)){finish();velocity=marks[deco];continue}
    if(/^(crescendo|cresc\.?|<)$/.test(deco)){finish();begin(1);continue}
    if(/^(diminuendo|dim\.?|decresc\.?|>)$/.test(deco)){finish();begin(-1);continue}
