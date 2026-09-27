@@ -8,7 +8,7 @@ const TECHNICAL_CONTRACT=COMPOSITION_CONTRACT;
 const REPRESENTATION_CONTRACTS=Object.freeze({
  compact:COMPOSITION_CONTRACT,
  abc:`ABC-NOTATION:
-Gib ausschließlich vollständige, gültige ABC-Notation aus. Verwende X:, T:, M:, L:, Q: und K:. Mehrstimmigkeit mit V:-Stimmen. Keine Erklärung außerhalb der ABC-Notation.`,
+Gib ausschließlich vollständige, gültige ABC-Notation aus. Verwende X:, T:, M:, L:, Q: und K:. Mehrstimmigkeit mit V:-Stimmen. Benenne Instrumente in den V:-Definitionen eindeutig und verwende bei Bedarf %%score/%%staves. Nutze musikalisch sinnvolle Dynamik (!pp! bis !fff!, Akzente, Crescendo/Diminuendo), Artikulation, Bindebögen, Phrasierung und spieltechnische Anweisungen, wenn sie zum Ausdruck der Komposition beitragen. Keine Erklärung außerhalb der ABC-Notation.`,
  midi:`MIDI-PERFORMANCE-TEXT (960 PPQ):
 H|["Titel",BPM,Zähler,Nenner]
 V|["Instrument",Program,Channel]
@@ -20,7 +20,7 @@ Beginne exakt mit FORMAT|COMPACT, FORMAT|ABC oder FORMAT|MIDI und gib danach aus
 COMPACT:
 ${COMPOSITION_CONTRACT}
 ABC:
-vollständige gültige ABC-Notation mit X:, T:, M:, L:, Q:, K: und bei Bedarf V:-Stimmen.
+vollständige gültige ABC-Notation mit X:, T:, M:, L:, Q:, K: und bei Bedarf V:-Stimmen; Instrumente eindeutig benennen und musikalisch sinnvolle Dynamik, Artikulation, Bindebögen, Phrasierung und Spielanweisungen notieren.
 MIDI:
 MIDI-PERFORMANCE-TEXT mit H|, V|, N|StartTick|DauerTicks|Pitch|Velocity sowie optional C|Tick|Controller|Wert, T|Tick|BPM und P|Tick|Wert; 960 PPQ.`
 });
