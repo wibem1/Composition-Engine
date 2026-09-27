@@ -118,7 +118,7 @@ function parseABC(text){
  const dynLevel={ppp:28,pp:38,p:50,mp:62,mf:78,f:94,ff:110,fff:122,fp:92,sfz:118,ffz:122};
  const setHair=(v,dir)=>hairpins.set(v,dir);const endHair=v=>hairpins.delete(v);
  const noteVelocity=v=>{let x=dynamics.get(v)??78,dir=hairpins.get(v)||0;if(dir){x=Math.max(28,Math.min(122,x+dir*3));dynamics.set(v,x)}return x};
- const performedDuration=(v,d)=>{const a=articulation.get(v);articulation.delete(v);if(a==='staccato')return d*.55;if(a==='staccatissimo')return d*.35;if(a==='tenuto')return d*.95;if((slurDepth.get(v)||0)>0)return d*1.03;return d*.90};
+ const performedDuration=(v,d)=>{const a=articulation.get(v);articulation.delete(v);if(a==='staccato')return d*.55;if(a==='staccatissimo')return d*.35;if(a==='tenuto')return d*.95;if((slurDepth.get(v)||0)>0)return d*1.03;return d};
  for(const [defaultV,line0] of body){let v=defaultV||curV;ensure(v);if(!pos.has(v)){pos.set(v,0);accs.set(v,{});dynamics.set(v,78);slurDepth.set(v,0)}let i=0,line=line0;
   while(i<line.length){
    if(/\s/.test(line[i])){i++;continue}
