@@ -4,12 +4,15 @@ const sandbox={window:{},crypto:require('crypto').webcrypto,TextEncoder,structur
 sandbox.globalThis=sandbox.window;
 vm.createContext(sandbox);vm.runInContext(source,sandbox);
 const engine=sandbox.window.CompositionEngine;
-assert.strictEqual(engine.version,'2.20.0');
+assert.strictEqual(engine.version,'2.20.1');
 assert.ok(engine.representations.compact&&engine.representations.abc&&engine.representations.midi&&engine.representations.lilypond&&engine.representations.free);
 
 const compact='H|["Test",96,4,4]\nV|["Piano",0,0]\nB|1|[[0,1,60,72],[1,1,64,76]]';
 const c=engine.parseCompositionRepresentation(compact,'compact');
 assert.strictEqual(c.format,'compact');assert.strictEqual(c.score.tracks[0].notes.length,2);
+const compactWithTrailingText=compact+'\nDamit sind alle Takte vollständig erfasst.';
+const ct=engine.parseCompositionRepresentation(compactWithTrailingText,'compact');
+assert.strictEqual(ct.score.tracks[0].notes.length,2,'plain trailing prose after a complete compact score must be ignored');
 
 const midi='H|["Perf",120,4,4]\nV|["Piano",0,0]\nN|0|947|60|71\nN|956|931|64|77\nC|73|64|127\nC|3718|64|0';
 const m=engine.parseCompositionRepresentation(midi,'midi');
@@ -31,7 +34,7 @@ assert.ok(!source.includes("'midi_translation'"),'LilyPond path must not contain
 assert.ok(!source.includes("'lilypond_technical_review'"),'LilyPond path must not contain an automatic second AI review stage');
 assert.ok(!source.includes("midi_delegated_to_notation_tool"),'LilyPond MIDI must not be reconstructed by Notation Tools');
 assert.strictEqual(typeof engine.analyzeScore,'function');assert.strictEqual(typeof engine.improveScore,'function');
-console.log('Composition Engine 2.20.0 transparent-prompt regression: OK');
+console.log('Composition Engine 2.20.1 transparent-prompt regression: OK');
 
 const abc=`X:1
 T:Three voices
