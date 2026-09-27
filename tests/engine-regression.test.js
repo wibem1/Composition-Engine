@@ -4,8 +4,8 @@ const sandbox={window:{},crypto:require('crypto').webcrypto,TextEncoder,structur
 sandbox.globalThis=sandbox.window;
 vm.createContext(sandbox);vm.runInContext(source,sandbox);
 const engine=sandbox.window.CompositionEngine;
-assert.strictEqual(engine.version,'2.12.0');
-assert.ok(engine.representations.compact&&engine.representations.abc&&engine.representations.midi&&engine.representations.free);
+assert.strictEqual(engine.version,'2.19.0');
+assert.ok(engine.representations.compact&&engine.representations.abc&&engine.representations.midi&&engine.representations.lilypond&&engine.representations.free);
 
 const compact='H|["Test",96,4,4]\nV|["Piano",0,0]\nB|1|[[0,1,60,72],[1,1,64,76]]';
 const c=engine.parseCompositionRepresentation(compact,'compact');
@@ -25,11 +25,13 @@ assert.ok(creative.includes('vollständig als Musik')&&creative.includes('musika
 const realization=engine.createPrompts({visibleTask:'Test',representation:'abc'},'FERTIGE MUSIK').realization;
 assert.ok(realization.includes('ABC-NOTATION'),'technical realization must receive the selected output contract');
 assert.ok(realization.includes('Komponiere NICHT neu')&&realization.includes('Vereinfache, regularisiere oder verschönere die Musik NICHT'),'realizer must preserve the completed composition');
-assert.ok(source.includes("contextMode:'creative-technical-separation'"));
-assert.ok(source.includes("'musical_composition'")&&source.includes("'technical_realization'"));
-assert.ok(source.includes("const analysisSource=(parsedFormat==='abc'||parsedFormat==='midi'||parsedFormat==='compact')?rawComposition:JSON.stringify(scoreToCompact(score));"));
+assert.ok(source.includes("contextMode:'single-call-dual-representation'"),'LilyPond path must use the single-call dual representation architecture');
+assert.ok(source.includes("===LILYPOND===")&&source.includes("===PERFORMANCE==="),'LilyPond path must request both synchronized sections in one response');
+assert.ok(!source.includes("'midi_translation'"),'LilyPond path must not contain a separate AI MIDI translation stage');
+assert.ok(!source.includes("'lilypond_technical_review'"),'LilyPond path must not contain an automatic second AI review stage');
+assert.ok(!source.includes("midi_delegated_to_notation_tool"),'LilyPond MIDI must not be reconstructed by Notation Tools');
 assert.strictEqual(typeof engine.analyzeScore,'function');assert.strictEqual(typeof engine.improveScore,'function');
-console.log('Composition Engine 2.12.0 creative/technical separation regression: OK');
+console.log('Composition Engine 2.19.0 architecture regression: OK');
 
 const abc=`X:1
 T:Three voices
@@ -154,3 +156,21 @@ assert.ok(pt.notes.some(n=>n[2]===62),'trill must alternate with upper neighbor'
 assert.ok(pt.notes.find(n=>n[0]===1&&n[2]===60)[3]<100,'CC11 must affect playback expression');
 assert.ok(pt.notes.find(n=>n[0]===4&&n[2]===55)[1]>1,'pedal and fermata must extend a sustained principal note');
 console.log('Expressive playback realization: OK');
+
+
+(async()=>{
+ let calls=0;
+ const result=await engine.compose({
+  snapshot:{visibleTask:'Vier Takte für Violine und Klavier',provider:'google',model:'test',representation:'lilypond'},
+  key:'test',runId:'single-call-test',now:()=>new Date(0).toISOString(),usedTitles:[],
+  requestModel:async({stage})=>{calls++;assert.strictEqual(stage,'musical_composition');return '===LILYPOND===\n\\\\version "2.24.0"\n\\\\score { { c\'4 d\' e\' f\' } }\n===PERFORMANCE===\nH|["Single Call",120,4,4]\nV|["Violine",40,0]\nB|1|[[0,1,60,80],[1,1,62,80],[2,1,64,80],[3,1,65,80]]';}
+ });
+ assert.strictEqual(calls,1,'LilyPond composition must make exactly one AI call');
+ assert.strictEqual(result.run.aiCalls.length,0,'mock requestModel owns call logging; engine must not synthesize extra calls');
+ assert.strictEqual(result.run.sourceOnly,false);
+ assert.strictEqual(result.run.score.title,'Single Call');
+ assert.strictEqual(result.run.score.tracks[0].notes.length,4);
+ assert.ok(result.run.lilypondSource.includes('\\\\version'));
+ assert.ok(result.midiBytes&&result.midiBytes.length>40,'same-call performance data must produce local MIDI');
+ console.log('LilyPond single-call composition + local MIDI regression: OK');
+})().catch(e=>{console.error(e);process.exitCode=1});
