@@ -4,7 +4,7 @@ const sandbox={window:{},crypto:require('crypto').webcrypto,TextEncoder,structur
 sandbox.globalThis=sandbox.window;
 vm.createContext(sandbox);vm.runInContext(source,sandbox);
 const engine=sandbox.window.CompositionEngine;
-assert.strictEqual(engine.version,'2.10.1');
+assert.strictEqual(engine.version,'2.11.0');
 assert.ok(engine.representations.compact&&engine.representations.abc&&engine.representations.midi&&engine.representations.free);
 
 const compact='H|["Test",96,4,4]\nV|["Piano",0,0]\nB|1|[[0,1,60,72],[1,1,64,76]]';
@@ -35,7 +35,7 @@ assert.ok(pABC.includes('ABC-NOTATION'));assert.ok(pMIDI.includes('960 PPQ'));as
 assert.strictEqual(typeof engine.analyzeScore,'function');assert.strictEqual(typeof engine.improveScore,'function');
 assert.ok(source.includes("contextMode:'single-creative-source'"));assert.ok(!source.includes("'midi_translation'"));
 assert.ok(source.includes("const analysisSource=(parsedFormat==='abc'||parsedFormat==='midi'||parsedFormat==='compact')?rawComposition:JSON.stringify(scoreToCompact(score));"));
-console.log('Composition Engine 2.10.1 regression tests: OK');
+console.log('Composition Engine 2.11.0 regression tests: OK');
 
 const abc=`X:1
 T:Three voices
@@ -82,3 +82,36 @@ assert.strictEqual(ds.tracks[0].notes[4][3],78);
 assert.strictEqual(ds.tracks[0].notes.at(-1)[3],38);
 assert.strictEqual(ds.tracks[1].notes[0][3],78,'dynamics must not leak between voices');
 console.log('ABC decorations and per-voice dynamics: OK');
+
+const expressive=`X:1
+T:Cello and piano
+M:3/4
+L:1/8
+Q:1/4=66
+K:Dm
+V:Cello clef=bass name="Violoncello"
+V:RH clef=treble name="Klavier"
+V:LH clef=bass name="Klavier"
+[V:Cello] z6 | !p!(D2 F2 A2) | !crescendo(! .d2 e2 !accent!f2 !crescendo)! |
+[V:RH] [DFA]6 | [DFA]6 | [CEG]6 |
+[V:LH] D,,6 | D,,6 | C,,6 |`;
+const ex=engine.parseCompositionRepresentation(expressive,'abc').score;
+assert.strictEqual(ex.tracks.length,3);
+assert.deepStrictEqual(Array.from(ex.tracks,t=>t.program),[42,0,0],'Cello must be GM Cello, both piano staves GM Piano');
+assert.strictEqual(ex.tracks[0].name,'Violoncello');
+assert.ok(ex.tracks[0].notes[0][3] < ex.tracks[0].notes.at(-1)[3],'cello crescendo must increase velocity');
+assert.ok(ex.tracks[0].notes[0][1] > .9,'slur must preserve connected note duration');
+assert.ok(ex.tracks[0].notes[3][1] < .7,'staccato must shorten performed duration');
+assert.ok(ex.tracks[0].notes.at(-1)[3] >= ex.tracks[0].notes.at(-2)[3],'accent must not reduce velocity');
+console.log('ABC expressive cello/piano performance regression: OK');
+
+const quoted=`X:1
+T:Quoted directions
+M:4/4
+L:1/4
+K:C
+V:Cello name="Violoncello"
+[V:Cello] "dolce"C D E F |`;
+const qs=engine.parseCompositionRepresentation(quoted,'abc').score;
+assert.strictEqual(qs.tracks[0].notes.length,4,'quoted text/chord annotations must never become phantom notes');
+console.log('ABC quoted annotation regression: OK');
