@@ -1,7 +1,7 @@
 (()=>{'use strict';
 
 const ENGINE_NAME='Composition Engine';
-const ENGINE_VERSION='2.11.1';
+const ENGINE_VERSION='2.12.0';
 
 const COMPOSITION_CONTRACT=`KOMPAKTES PARTITURFORMAT:\nH|["Titel",BPM,Zähler,Nenner]\nV|["Instrument",Program,Channel]\nB|Takt|[[Position,Dauer,Pitch,Velocity],...]\nDanach weitere B-Zeilen oder eine neue V-Zeile. Jede Zeile ist abgeschlossen. Takt beginnt bei 1; Position und Dauer in Viertelnoten-Einheiten. Pausen sind Lücken. Notennamen werden nicht zusätzlich ausgegeben.`
 const TECHNICAL_CONTRACT=COMPOSITION_CONTRACT;
@@ -28,7 +28,8 @@ function representationOf(snapshot){const r=String(snapshot?.representation||'co
 function createPrompts(snapshot,composition=''){
  const representation=representationOf(snapshot),contract=REPRESENTATION_CONTRACTS[representation];
  return{
-  composition:'AUFTRAG:\n'+snapshot.visibleTask+'\n\nGib die fertige Komposition vollständig und syntaktisch abgeschlossen ausschließlich in diesem technischen Ausgabeformat aus:\n'+contract,
+  composition:'AUFTRAG:\n'+snapshot.visibleTask+'\n\nKomponiere das Werk jetzt ausschließlich als Musik. Denke nicht an ABC, MIDI, Compact, MusicXML, Parser, Export, technische Syntax oder daran, was eine nachfolgende technische Umsetzung darstellen kann. Triff alle musikalischen Entscheidungen frei nach dem Auftrag. Gib die vollständig auskomponierte musikalische Fassung in der musikalischen Darstellung aus, die dir für das Komponieren selbst am natürlichsten ist. Die technische Realisation erfolgt erst danach durch eine getrennte Instanz.',
+  realization:'Übertrage die folgende bereits vollständig komponierte Musik so getreu wie möglich in das verlangte technische Ausgabeformat. Komponiere NICHT neu. Vereinfache, regularisiere oder verschönere die Musik NICHT. Erhalte insbesondere Tonhöhen, Rhythmen, Pausen, Stimmen, Phrasierung, Dynamik, Artikulation, Verzierungen, Tempo- und Ausdrucksangaben, soweit das Zielformat sie darstellen kann. Wenn etwas nicht direkt darstellbar ist, bewahre die musikalische Bedeutung so vollständig wie möglich.\\n\\nBEREITS FERTIG KOMPONIERTE MUSIK:\\n'+composition+'\\n\\nTECHNISCHES ZIELFORMAT:\\n'+contract,
   compositionIdea:'Beschreibe die bereits fertig komponierte Partitur konkret, differenziert und hörbezogen. Erfasse nur Eigenschaften, die aus der tatsächlichen Partitur hervorgehen. Etwa 500 bis 900 Zeichen, höchstens 900 Zeichen. Keine Bewertung, keine Verbesserungsvorschläge und keine Wiederholung des Auftrags.\\n\\nFERTIGE PARTITUR:\\n'+composition
  };
 }
@@ -175,15 +176,18 @@ function compositionProfile(snapshot,score,draft,description){const bpm=Number(s
 async function compose({snapshot,key,repeatOf=null,seriesId=null,runId,now,requestModel,usedTitles=[]}){
  const startedAt=now(),run={id:runId,testId:runId,schema:'composition-engine-2.7-diagnosis-v1',app:{name:'Composition Engine Client',version:ENGINE_VERSION},seriesId,startedAt,repeatOf,contextMode:'single-creative-source',input:{visibleTask:snapshot.visibleTask,provider:snapshot.provider,model:snapshot.model,representation:representationOf(snapshot)},compositionContract:REPRESENTATION_CONTRACTS[representationOf(snapshot)],events:[],aiCalls:[],requestSnapshot:structuredClone(snapshot)};
  const ev=(phase,data={})=>run.events.push({at:now(),phase,...data});
- ev('run_started',{note:'Ein einziger kreativer KI-Schritt erzeugt die vollständige symbolische Partitur. Danach keine KI-Übersetzung.'});
+ ev('run_started',{note:'Kreative Komposition und technische Realisation sind strikt getrennt. Die komponierende Instanz erhält keinen technischen Ausgabeformatvertrag.'});
  const call=async(prompt,stage)=>requestModel({snapshot,key,promptText:prompt,stage,run,event:ev});
- const previousTitles=usedTitles.map(t=>String(t||'').trim()).filter(Boolean);const titleConstraint=previousTitles.length?'\n\nVERGEBENE WERKTITEL (keinen davon erneut verwenden):\n'+previousTitles.slice(-80).join('\n'):'';let rawComposition=String(await call(createPrompts(snapshot).composition+titleConstraint,'composition')||'').trim();
- if(!rawComposition)throw new Error('Die Komposition ist leer.');
+ const musicalComposition=String(await call(createPrompts(snapshot).composition,'musical_composition')||'').trim();
+ if(!musicalComposition)throw new Error('Die musikalische Komposition ist leer.');
+ run.musicalComposition=musicalComposition;ev('musical_composition_completed',{note:'Musikalische Fassung abgeschlossen, bevor ein technisches Zielformat eingeführt wird.'});
+ let rawComposition=String(await call(createPrompts(snapshot,musicalComposition).realization,'technical_realization')||'').trim();
+ if(!rawComposition)throw new Error('Die technische Realisation ist leer.');
  let score,obj=null,parsedFormat='';try{const parsed=parseCompositionRepresentation(rawComposition,representationOf(snapshot));score=parsed.score;obj=parsed.obj||null;parsedFormat=parsed.format}catch(e){
    run.composition=rawComposition;run.rawCompositionOnError=rawComposition;ev('composition_format_invalid',{message:e?.message||String(e),characters:rawComposition.length,rawComposition});
-   throw new Error('Die komponierende KI hat keine vollständig lesbare Partitur geliefert: '+(e?.message||String(e)));
+   throw new Error('Die technische Realisation der bereits komponierten Musik ist nicht vollständig lesbar: '+(e?.message||String(e)));
  }
- run.composition=rawComposition;run.parsedModelJson=obj;run.score=score;run.representation={requested:representationOf(snapshot),parsed:parsedFormat};ev('composition_parsed',{changed:false,representation:parsedFormat,note:'Die kreative Ausgabe selbst ist die Partitur; keine zweite KI und keine musikalische Übersetzung.'});
+ run.composition=rawComposition;run.parsedModelJson=obj;run.score=score;run.representation={requested:representationOf(snapshot),parsed:parsedFormat};ev('composition_realized',{changed:true,representation:parsedFormat,note:'Die zweite Instanz realisiert ausschließlich technisch; sie erhält ausdrücklich kein Mandat zur Neukomposition.'});
  const title=String(score?.title||'').trim(),allTitles=usedTitles.filter(Boolean);if(title&&allTitles.some(t=>String(t).toLocaleLowerCase('de-DE')===title.toLocaleLowerCase('de-DE'))){let nt=(await call(duplicateTitlePrompt(title,allTitles,rawComposition),'title_renaming')).trim().replace(/^Titel:\\s*/i,'').replace(/^['“”"]|['“”"]$/g,'').trim();if(!nt||allTitles.some(t=>String(t).toLocaleLowerCase('de-DE')===nt.toLocaleLowerCase('de-DE'))){let n=2;while(allTitles.some(t=>String(t).toLocaleLowerCase('de-DE')===(title+' ('+n+')').toLocaleLowerCase('de-DE')))n++;nt=title+' ('+n+')'}score.title=nt;ev('duplicate_title_replaced',{oldTitle:title,newTitle:nt})}
  const midiBytes=buildMidi(score),buf=midiBytes.buffer.slice(midiBytes.byteOffset,midiBytes.byteOffset+midiBytes.byteLength),midiHash=await sha256Buffer(buf);run.midi={bytes:midiBytes.byteLength,sha256:midiHash,note:'Deterministisch lokal direkt aus der kreativen Quellpartitur erzeugt; kein KI-Übersetzungsschritt.'};ev('midi_generated',{bytes:midiBytes.byteLength,sha256:midiHash});
  const analysisSource=(parsedFormat==='abc'||parsedFormat==='midi'||parsedFormat==='compact')?rawComposition:JSON.stringify(scoreToCompact(score));
