@@ -138,35 +138,6 @@ function parseABC(text){
  if(!tracks.length)throw new Error('Keine unterstützten ABC-Noten gefunden.');
  return{title,bpm,timeSignature:meter,tracks,abcSource:text,importedFrom:'ABC',barCount:Math.max(1,Math.ceil(Math.max(...tracks.flatMap(t=>t.notes.map(n=>n[0]+n[1])))/bar))}
 }
-function abcVelocityMap(raw){
- const marks={ppp:28,pp:38,p:50,mp:62,mf:78,f:94,ff:110,fff:122,sfz:118,ffz:122,fp:92};
- let velocity=78,pendingAccent=false,hairpin=null;
- const events=[];
- const tokenRe=/!([^!]+)!|\+([^+]+)\+|\[V:[^\]]+\]|(?:\^\^|__|\^|_|=)?[A-Ga-g][,']*\d*(?:\/\d*|\/)?|[<>]/g;
- const begin=dir=>{hairpin={dir,startIndex:events.length,startVelocity:velocity}};
- const finish=()=>{if(!hairpin)return;const count=events.length-hairpin.startIndex;if(count>0){const delta=hairpin.dir*(count<=2?8:count<=4?12:count<=8?18:24),target=Math.max(28,Math.min(122,hairpin.startVelocity+delta));for(let i=0;i<count;i++){const q=(i+1)/count;events[hairpin.startIndex+i]=Math.round(hairpin.startVelocity+(target-hairpin.startVelocity)*q)}velocity=target}hairpin=null};
- let m;while((m=tokenRe.exec(String(raw||'')))){
-  const deco=String(m[1]||m[2]||'').toLowerCase().trim().replace(/[()]/g,'');
-  if(deco){
-   if(/[)]$/.test(String(m[1]||m[2]||'').trim())&&/^(crescendo|cresc\.?|diminuendo|dim\.?|decresc\.?)$/.test(deco)){finish();continue}
-   if(Object.prototype.hasOwnProperty.call(marks,deco)){finish();velocity=marks[deco];continue}
-   if(/^(crescendo|cresc\.?|<)$/.test(deco)){finish();begin(1);continue}
-   if(/^(diminuendo|dim\.?|decresc\.?|>)$/.test(deco)){finish();begin(-1);continue}
-   if(/^(accent|sf|sff|sforzando|marcato)$/.test(deco)){pendingAccent=true;continue}
-   if(/^(endcrescendo|enddiminuendo|enddim|enddecrescendo)$/.test(deco)){finish();continue}
-  }
-  if(m[0]==='<'){finish();begin(1);continue} if(m[0]==='>'){finish();begin(-1);continue}
-  if(/[A-Ga-g]/.test(m[0])){let v=velocity;if(pendingAccent){v=Math.min(127,v+20);pendingAccent=false}events.push(v)}
- }
- finish();return events;
-}
-function applyAbcVelocities(raw,score){
- if(!/!(?:ppp|pp|p|mp|mf|f|ff|fff|sfz|ffz|fp|crescendo|diminuendo|cresc\.?|dim\.?|decresc\.?)!|\+(?:ppp|pp|p|mp|mf|f|ff|fff|sfz|ffz|fp|crescendo|diminuendo)\+/i.test(String(raw||'')))return score;const velocities=abcVelocityMap(raw);if(!velocities.length)return score;
- const notes=[];for(const tr of(score?.tracks||[]))for(const n of(tr.notes||[]))notes.push(n);
- notes.sort((a,b)=>(Number(a?.[0])||0)-(Number(b?.[0])||0));
- for(let i=0;i<notes.length&&i<velocities.length;i++)if(Array.isArray(notes[i])&&notes[i].length>=4)notes[i][3]=velocities[i];
- return score;
-}
 function parseCompositionRepresentation(text,representation){
  let raw=String(text||'').trim(),r=representationOf({representation});
  if(r==='free'){const m=raw.match(/^FORMAT\|(COMPACT|ABC|MIDI)\s*\n?/i);if(!m)throw new Error('Freie Wahl ohne FORMAT-Kennung.');r=m[1].toLowerCase();raw=raw.slice(m[0].length).trim()}
@@ -210,5 +181,5 @@ async function compose({snapshot,key,repeatOf=null,seriesId=null,runId,now,reque
  return{run,midiBytes};
 }
 
-window.CompositionEngine=Object.freeze({name:ENGINE_NAME,version:ENGINE_VERSION,representations:REPRESENTATION_CONTRACTS,compose,analyzeScore,analyzeImprovement,improveScore,COMPOSITION_CONTRACT,TECHNICAL_CONTRACT,createPrompts,criticalAnalysisPrompt,postImprovementAnalysisPrompt,approvedImprovementPrompt,scoreToCompact,mergeTitleRegistry,duplicateTitlePrompt,makeRequest,actualRequest,extractText,extractJson,findScore,findIdea,sha256Text,sha256Buffer,buildMidi,parseABC,extractCompactScore,extractMidiPerformanceScore,abcVelocityMap,applyAbcVelocities,parseCompositionRepresentation});
+window.CompositionEngine=Object.freeze({name:ENGINE_NAME,version:ENGINE_VERSION,representations:REPRESENTATION_CONTRACTS,compose,analyzeScore,analyzeImprovement,improveScore,COMPOSITION_CONTRACT,TECHNICAL_CONTRACT,createPrompts,criticalAnalysisPrompt,postImprovementAnalysisPrompt,approvedImprovementPrompt,scoreToCompact,mergeTitleRegistry,duplicateTitlePrompt,makeRequest,actualRequest,extractText,extractJson,findScore,findIdea,sha256Text,sha256Buffer,buildMidi,parseABC,extractCompactScore,extractMidiPerformanceScore,parseCompositionRepresentation});
 })();
