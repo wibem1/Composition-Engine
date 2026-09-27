@@ -21,7 +21,7 @@ assert.strictEqual(free.format,'midi');
 
 const creative=engine.createPrompts({visibleTask:'Test',representation:'abc'}).composition;
 for(const forbidden of ['ABC-NOTATION','960 PPQ','FORMAT|COMPACT','MIDI-PERFORMANCE','KOMPAKTES PARTITURFORMAT','MusicXML']) assert.ok(!creative.includes(forbidden),'creative prompt must not expose technical representation: '+forbidden);
-assert.ok(creative.includes('ausschließlich als Musik')&&creative.includes('technische Realisation erfolgt erst danach'),'creative/technical separation must be explicit');
+assert.ok(creative.includes('vollständig als Musik')&&creative.includes('musikalischen Entscheidungen frei'),'creative prompt must remain purely musical');
 const realization=engine.createPrompts({visibleTask:'Test',representation:'abc'},'FERTIGE MUSIK').realization;
 assert.ok(realization.includes('ABC-NOTATION'),'technical realization must receive the selected output contract');
 assert.ok(realization.includes('Komponiere NICHT neu')&&realization.includes('Vereinfache, regularisiere oder verschönere die Musik NICHT'),'realizer must preserve the completed composition');
