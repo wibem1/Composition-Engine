@@ -1,8 +1,8 @@
 (()=>{'use strict';
 
 const ENGINE_NAME='Composition Engine';
-const ENGINE_VERSION='2.14.1';
-const BUILD=21401;
+const ENGINE_VERSION='2.14.2';
+const BUILD=21402;
 
 const COMPOSITION_CONTRACT=`KOMPAKTES PARTITURFORMAT:\nH|["Titel",BPM,Zähler,Nenner]\nV|["Instrument",Program,Channel]\nB|Takt|[[Position,Dauer,Pitch,Velocity],...]\nDanach weitere B-Zeilen oder eine neue V-Zeile. Jede Zeile ist abgeschlossen. Takt beginnt bei 1; Position und Dauer in Viertelnoten-Einheiten. Pausen sind Lücken. Notennamen werden nicht zusätzlich ausgegeben.`
 const TECHNICAL_CONTRACT=COMPOSITION_CONTRACT;
@@ -154,13 +154,13 @@ function parseCompositionRepresentation(text,representation){
    const fenced=raw.match(/\`\`\`(lilypond|ly|abc)?\\s*([\\s\\S]*?)\`\`\`/i);
    const body=fenced?fenced[2].trim():raw;
    const lang=(fenced?.[1]||'').toLowerCase();
-   if(lang==='lilypond'||lang==='ly'||/^\\\\version\\s+"/m.test(body))return{score:{title:'',bpm:120,timeSignature:[4,4],tracks:[],lilypondSource:body},format:'lilypond',raw,lilypondSource:body};
+   if(lang==='lilypond'||lang==='ly'||/^\\version\s+"/m.test(body))return{score:{title:'',bpm:120,timeSignature:[4,4],tracks:[],lilypondSource:body},format:'lilypond',raw,lilypondSource:body};
    if(lang==='abc'||/^X:\\s*\\S+/m.test(body))return{score:parseABC(body),format:'abc',raw};
    return{score:null,format:'free',raw,freeSource:raw};
  }
  if(r==='lilypond'){
    const body=raw.replace(/^\`\`\`(?:lilypond|ly)?\\s*/i,'').replace(/\\s*\`\`\`$/,'').trim();
-   if(!/^\\\\version\\s+"/m.test(body))throw new Error('LilyPond-Ausgabe ohne \\\\version.');
+   if(!/^\\version\s+"/m.test(body))throw new Error('LilyPond-Ausgabe ohne \\version.');
    return{score:{title:'',bpm:120,timeSignature:[4,4],tracks:[],lilypondSource:body},format:'lilypond',raw,lilypondSource:body};
  }
  if(r==='compact'){if(/^\\s*H\\|/.test(raw))return{score:extractCompactScore(raw),format:'compact',raw};const obj=extractJson(raw);return{score:findScore(obj),format:'compact-json',raw,obj}}
