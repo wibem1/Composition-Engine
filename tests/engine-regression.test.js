@@ -4,7 +4,7 @@ const sandbox={window:{},crypto:require('crypto').webcrypto,TextEncoder,structur
 sandbox.globalThis=sandbox.window;
 vm.createContext(sandbox);vm.runInContext(source,sandbox);
 const engine=sandbox.window.CompositionEngine;
-assert.strictEqual(engine.version,'2.9.2');
+assert.strictEqual(engine.version,'2.10.0');
 assert.ok(engine.representations.compact&&engine.representations.abc&&engine.representations.midi&&engine.representations.free);
 
 const compact='H|["Test",96,4,4]\nV|["Piano",0,0]\nB|1|[[0,1,60,72],[1,1,64,76]]';
@@ -35,4 +35,26 @@ assert.ok(pABC.includes('ABC-NOTATION'));assert.ok(pMIDI.includes('960 PPQ'));as
 assert.strictEqual(typeof engine.analyzeScore,'function');assert.strictEqual(typeof engine.improveScore,'function');
 assert.ok(source.includes("contextMode:'single-creative-source'"));assert.ok(!source.includes("'midi_translation'"));
 assert.ok(source.includes("const analysisSource=(parsedFormat==='abc'||parsedFormat==='midi'||parsedFormat==='compact')?rawComposition:JSON.stringify(scoreToCompact(score));"));
-console.log('Composition Engine 2.9.2 regression tests: OK');
+console.log('Composition Engine 2.10.0 regression tests: OK');
+
+const abc=`X:1
+T:Three voices
+M:4/4
+L:1/8
+K:Am
+V:Vln name="Violine"
+V:RH name="Klavier"
+V:LH name="Bass"
+[V:Vln]
+A2 c2 e2 a2 | g4 e4 |
+[V:RH]
+[Ace]4 [GBe]4 | [Ace]8 |
+[V:LH]
+A,,4 E,4 | A,,8 |`;
+const parsed=engine.parseCompositionRepresentation(abc,'abc').score;
+assert.strictEqual(parsed.barCount,2);
+assert.strictEqual(parsed.tracks.length,3);
+assert.deepStrictEqual(Array.from(parsed.tracks,t=>t.program),[40,0,0]);
+assert.deepStrictEqual(Array.from(parsed.tracks,t=>t.notes[0][0]),[0,0,0]);
+assert.deepStrictEqual(Array.from(parsed.tracks,t=>t.notes[0][2]),[69,69,33]);
+console.log('Engine-owned ABC multi-voice regression: OK');
