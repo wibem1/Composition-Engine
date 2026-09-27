@@ -2,7 +2,7 @@ name: Engine regression tests
 
 on:
   push:
-    branches: [ main, stabilize-engine-2.2.3 ]
+    branches: [ main, stabilize-engine-2.2.3, dev/abc-performance-2.11.0 ]
   pull_request:
     branches: [ main ]
 

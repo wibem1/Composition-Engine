@@ -1,14 +1,14 @@
 (()=>{'use strict';
 
 const ENGINE_NAME='Composition Engine';
-const ENGINE_VERSION='2.10.1';
+const ENGINE_VERSION='2.11.0';
 
 const COMPOSITION_CONTRACT=`KOMPAKTES PARTITURFORMAT:\nH|["Titel",BPM,Zähler,Nenner]\nV|["Instrument",Program,Channel]\nB|Takt|[[Position,Dauer,Pitch,Velocity],...]\nDanach weitere B-Zeilen oder eine neue V-Zeile. Jede Zeile ist abgeschlossen. Takt beginnt bei 1; Position und Dauer in Viertelnoten-Einheiten. Pausen sind Lücken. Notennamen werden nicht zusätzlich ausgegeben.`
 const TECHNICAL_CONTRACT=COMPOSITION_CONTRACT;
 const REPRESENTATION_CONTRACTS=Object.freeze({
  compact:COMPOSITION_CONTRACT,
  abc:`ABC-NOTATION:
-Gib ausschließlich vollständige, gültige ABC-Notation aus. Verwende X:, T:, M:, L:, Q: und K:. Mehrstimmigkeit mit V:-Stimmen. Keine Erklärung außerhalb der ABC-Notation.`,
+Gib ausschließlich vollständige, gültige ABC-Notation aus. Verwende X:, T:, M:, L:, Q: und K:. Mehrstimmigkeit mit V:-Stimmen. Benenne Instrumente in den V:-Definitionen eindeutig und verwende bei Bedarf %%score/%%staves. Nutze musikalisch sinnvolle Dynamik (!pp! bis !fff!, Akzente, Crescendo/Diminuendo), Artikulation, Bindebögen, Phrasierung und spieltechnische Anweisungen, wenn sie zum Ausdruck der Komposition beitragen. Keine Erklärung außerhalb der ABC-Notation.`,
  midi:`MIDI-PERFORMANCE-TEXT (960 PPQ):
 H|["Titel",BPM,Zähler,Nenner]
 V|["Instrument",Program,Channel]
@@ -20,7 +20,7 @@ Beginne exakt mit FORMAT|COMPACT, FORMAT|ABC oder FORMAT|MIDI und gib danach aus
 COMPACT:
 ${COMPOSITION_CONTRACT}
 ABC:
-vollständige gültige ABC-Notation mit X:, T:, M:, L:, Q:, K: und bei Bedarf V:-Stimmen.
+vollständige gültige ABC-Notation mit X:, T:, M:, L:, Q:, K: und bei Bedarf V:-Stimmen; Instrumente eindeutig benennen und musikalisch sinnvolle Dynamik, Artikulation, Bindebögen, Phrasierung und Spielanweisungen notieren.
 MIDI:
 MIDI-PERFORMANCE-TEXT mit H|, V|, N|StartTick|DauerTicks|Pitch|Velocity sowie optional C|Tick|Controller|Wert, T|Tick|BPM und P|Tick|Wert; 960 PPQ.`
 });
@@ -89,13 +89,55 @@ const KEYS={C:[],G:['F'],D:['F','C'],A:['F','C','G'],E:['F','C','G','D'],B:['F',
 function frac(s,base){if(!s)return base;if(s==='/')return base/2;if(/^\/\d+$/.test(s))return base/Number(s.slice(1));if(/^\d+$/.test(s))return base*Number(s);const m=s.match(/^(\d*)\/(\d+)$/);return m?base*(Number(m[1]||1)/Number(m[2])):base}
 function keyAcc(k){k=String(k||'C').trim().split(/\s+/)[0];const minor=/m$/.test(k);if(minor){const relative={Am:'C',Em:'G',Bm:'D','F#m':'A','C#m':'E','G#m':'B','D#m':'F#','A#m':'C#',Dm:'F',Gm:'Bb',Cm:'Eb',Fm:'Ab',Bbm:'Db',Ebm:'Gb',Abm:'Cb'};k=relative[k]||k.slice(0,-1)}const a=KEYS[k]||[];const flat=/b/.test(k)||['F','Bb','Eb','Ab','Db','Gb','Cb'].includes(k);return{set:new Set(a),flat}}
 function pitch(tok,key,measureAcc){const m=tok.match(/^([\^_=]*)([A-Ga-g])([,']*)/);if(!m)return null;let[,acc,l,oct]=m,pc=SEMI[l.toUpperCase()],o=(l===l.toLowerCase()?5:4);for(const c of oct)o+=c==="'"?1:-1;let alter=0;if(acc){if(acc.includes('='))alter=0;else alter=(acc.match(/\^/g)||[]).length-(acc.match(/_/g)||[]).length;measureAcc[l.toUpperCase()]=alter}else if(Object.prototype.hasOwnProperty.call(measureAcc,l.toUpperCase()))alter=measureAcc[l.toUpperCase()];else if(key.set.has(l.toUpperCase()))alter=key.flat?-1:1;return 12*(o+1)+pc+alter}
-function parseABC(text){text=String(text||'').replace(/\r/g,'');const tuneStarts=[];for(const m of text.matchAll(/^X:\s*[^\n]+/gm))tuneStarts.push(m.index);if(tuneStarts.length>1)text=text.slice(tuneStarts[0],tuneStarts[1]).trim();const lines=text.split('\n');let title='ABC Import',meter=[4,4],unit=1/8,bpm=120,keyName='C',curV='V1';const voices=new Map();const voiceNames=new Map();let body=[];for(let raw of lines){let line=raw.replace(/%.*/,'').trim();if(!line)continue;let m;if((m=line.match(/^T:\s*(.*)/)))title=m[1].trim()||title;else if((m=line.match(/^M:\s*(\d+)\/(\d+)/)))meter=[+m[1],+m[2]];else if((m=line.match(/^L:\s*(\d+)\/(\d+)/)))unit=+m[1]/+m[2];else if((m=line.match(/^Q:.*?=(\d+(?:\.\d+)?)/)))bpm=+m[1];else if((m=line.match(/^K:\s*([^\s]+)/)))keyName=m[1];else if((m=line.match(/^V:\s*([^\s]+)(.*)/))){curV=m[1];const nm=m[2].match(/(?:name|nm)="([^"]+)"/);if(nm)voiceNames.set(curV,nm[1]);if(!voices.has(curV))voices.set(curV,[]);/* V: declarations contain voice metadata, not music events. */}else if(/^[A-Za-z]:/.test(line)||/^%%/.test(line)){}else {const inline=line.match(/^\[V:([^\]]+)\]/);if(inline){curV=inline[1];if(!voices.has(curV))voices.set(curV,[])}body.push([curV,line])}}
-if(!voices.size)voices.set('V1',[]);
-const key=keyAcc(keyName),bar=(meter[0]*4/meter[1]);const pos=new Map([...voices.keys()].map(v=>[v,0]));const accs=new Map([...voices.keys()].map(v=>[v,{}]));const dynamics=new Map([...voices.keys()].map(v=>[v,78]));
-let activeV=null;for(const [defaultV,line0] of body){let v=defaultV||curV;activeV=v;if(!voices.has(v)){voices.set(v,[]);pos.set(v,0);accs.set(v,{})}let i=0,line=line0;while(i<line.length){const decoration=line.slice(i).match(/^([!+])([^!+]*?)\1/);if(decoration){const level={ppp:28,pp:38,p:50,mp:62,mf:78,f:94,ff:110,fff:122}[decoration[2].toLowerCase()];if(level!==undefined)dynamics.set(v,level);i+=decoration[0].length;continue}if(/\s/.test(line[i])){i++;continue}const iv=line.slice(i).match(/^\[V:([^\]]+)\]/);if(iv){v=iv[1];activeV=v;if(!voices.has(v)){voices.set(v,[]);pos.set(v,0);accs.set(v,{})}i+=iv[0].length;continue}if(line[i]==='|'){accs.set(v,{});i++;while(i<line.length&&/[:|\[\]]/.test(line[i]))i++;continue}const rest=line.slice(i).match(/^z(\d*\/\d+|\/\d+|\/|\d+)?/);if(rest){pos.set(v,pos.get(v)+frac(rest[1],unit*4));i+=rest[0].length;continue}if(line[i]==='['&&!/^\[V:/.test(line.slice(i))){const end=line.indexOf(']',i);if(end>i){const inside=line.slice(i+1,end),lm=line.slice(end+1).match(/^(\d*\/\d+|\/\d+|\/|\d+)?/),d=frac(lm?.[1],unit*4),tokens=inside.match(/[\^_=]*[A-Ga-g][,']*/g)||[];for(const t of tokens){const p=pitch(t,key,accs.get(v));if(p!=null)voices.get(v).push([pos.get(v),d,p,dynamics.get(v)??78])}pos.set(v,pos.get(v)+d);i=end+1+(lm?.[0]?.length||0);continue}}
-const n=line.slice(i).match(/^([\^_=]*[A-Ga-g][,']*)(\d*\/\d+|\/\d+|\/|\d+)?/);if(n){const d=frac(n[2],unit*4),p=pitch(n[1],key,accs.get(v));if(p!=null)voices.get(v).push([pos.get(v),d,p,dynamics.get(v)??78]);pos.set(v,pos.get(v)+d);i+=n[0].length;continue}i++}}
-const tracks=[...voices.entries()].map(([id,notes],i)=>({name:voiceNames.get(id)||id,program:/violin|violine|vln/i.test(voiceNames.get(id)||id)?40:0,channel:i%16,notes})).filter(t=>t.notes.length);if(!tracks.length)throw new Error('Keine unterstützten ABC-Noten gefunden.');return{title,bpm,timeSignature:meter,tracks,abcSource:text,importedFrom:'ABC',barCount:Math.max(1,Math.ceil(Math.max(...tracks.flatMap(t=>t.notes.map(n=>n[0]+n[1])))/bar))}}
-
+const ABC_GM_PROGRAMS=[
+ [/piano|klavier|pianoforte|grand/i,0],[/violin|violine|vln/i,40],[/viola|bratsche/i,41],[/violoncello|cello|vc\.?/i,42],[/contrabass|double bass|kontrabass/i,43],
+ [/harp|harfe/i,46],[/flute|flöte|flauto/i,73],[/piccolo/i,72],[/oboe/i,68],[/english horn|cor anglais|englischhorn/i,69],[/clarinet|klarinette/i,71],[/bassoon|fagott/i,70],
+ [/soprano sax/i,64],[/alto sax/i,65],[/tenor sax/i,66],[/baritone sax/i,67],[/trumpet|trompete/i,56],[/trombone|posaune/i,57],[/tuba/i,58],[/french horn|horn/i,60],
+ [/acoustic guitar|gitarre|guitar/i,24],[/organ|orgel/i,19],[/accordion|akkordeon/i,21],[/choir|chor/i,52],[/voice|stimme|vocal/i,53]
+];
+function abcProgramForVoice(name){for(const [re,p] of ABC_GM_PROGRAMS)if(re.test(String(name||'')))return p;return 0}
+function abcChannelForVoice(index,program){let ch=index%16;if(ch===9)ch=(ch+1)%16;return ch}
+function parseABC(text){
+ text=String(text||'').replace(/\r/g,'');const tuneStarts=[];for(const m of text.matchAll(/^X:\s*[^\n]+/gm))tuneStarts.push(m.index);if(tuneStarts.length>1)text=text.slice(tuneStarts[0],tuneStarts[1]).trim();
+ const lines=text.split('\n');let title='ABC Import',meter=[4,4],unit=1/8,bpm=120,keyName='C',curV='V1';const voices=new Map(),voiceNames=new Map(),voicePrograms=new Map();let body=[];
+ const ensure=v=>{if(!voices.has(v))voices.set(v,[])};
+ for(let raw of lines){let line=raw.replace(/%.*/,'').trim();if(!line)continue;let m;
+  if((m=line.match(/^T:\s*(.*)/)))title=m[1].trim()||title;
+  else if((m=line.match(/^M:\s*(\d+)\/(\d+)/)))meter=[+m[1],+m[2]];
+  else if((m=line.match(/^L:\s*(\d+)\/(\d+)/)))unit=+m[1]/+m[2];
+  else if((m=line.match(/^Q:.*?=(\d+(?:\.\d+)?)/)))bpm=+m[1];
+  else if((m=line.match(/^K:\s*([^\s]+)/)))keyName=m[1];
+  else if((m=line.match(/^V:\s*([^\s]+)(.*)/))){curV=m[1];const nm=m[2].match(/(?:name|nm)="([^"]+)"/);if(nm)voiceNames.set(curV,nm[1]);ensure(curV)}
+  else if((m=line.match(/^%%MIDI\s+program\s+(\d+)/i))){voicePrograms.set(curV,Math.max(0,Math.min(127,+m[1])))}
+  else if((m=line.match(/^%%MIDI\s+voice\s+([^\s]+).*?instrument\s*=\s*(\d+)/i))){voicePrograms.set(m[1],Math.max(0,Math.min(127,+m[2]-1)))}
+  else if(/^[A-Za-z]:/.test(line)||/^%%/.test(line)){}
+  else {const inline=line.match(/^\[V:([^\]]+)\]/);if(inline){curV=inline[1];ensure(curV)}body.push([curV,line])}
+ }
+ if(!voices.size)voices.set('V1',[]);
+ const key=keyAcc(keyName),bar=(meter[0]*4/meter[1]),pos=new Map([...voices.keys()].map(v=>[v,0])),accs=new Map([...voices.keys()].map(v=>[v,{}])),dynamics=new Map([...voices.keys()].map(v=>[v,78])),hairpins=new Map(),articulation=new Map(),slurDepth=new Map([...voices.keys()].map(v=>[v,0]));
+ const dynLevel={ppp:28,pp:38,p:50,mp:62,mf:78,f:94,ff:110,fff:122,fp:92,sfz:118,ffz:122};
+ const setHair=(v,dir)=>hairpins.set(v,dir);const endHair=v=>hairpins.delete(v);
+ const noteVelocity=v=>{let x=dynamics.get(v)??78,dir=hairpins.get(v)||0;if(dir){x=Math.max(28,Math.min(122,x+dir*3));dynamics.set(v,x)}return x};
+ const performedDuration=(v,d)=>{const a=articulation.get(v);articulation.delete(v);if(a==='staccato')return d*.55;if(a==='staccatissimo')return d*.35;if(a==='tenuto')return d*.95;if((slurDepth.get(v)||0)>0)return d*1.03;return d};
+ for(const [defaultV,line0] of body){let v=defaultV||curV;ensure(v);if(!pos.has(v)){pos.set(v,0);accs.set(v,{});dynamics.set(v,78);slurDepth.set(v,0)}let i=0,line=line0;
+  while(i<line.length){
+   if(/\s/.test(line[i])){i++;continue}
+   if(line[i]==='"'){const e=line.indexOf('"',i+1);i=e>=0?e+1:line.length;continue}
+   const iv=line.slice(i).match(/^\[V:([^\]]+)\]/);if(iv){v=iv[1];ensure(v);if(!pos.has(v)){pos.set(v,0);accs.set(v,{});dynamics.set(v,78);slurDepth.set(v,0)}i+=iv[0].length;continue}
+   const decoration=line.slice(i).match(/^([!+])([^!+]*?)\1/);if(decoration){let d=decoration[2].toLowerCase().trim();if(Object.prototype.hasOwnProperty.call(dynLevel,d))dynamics.set(v,dynLevel[d]);else if(/^(?:crescendo|cresc\.?|<)\($/.test(d))setHair(v,1);else if(/^(?:diminuendo|dim\.?|decresc\.?|>)\($/.test(d))setHair(v,-1);else if(/[<>]\)$/.test(d)||/^(?:crescendo|cresc\.?|diminuendo|dim\.?|decresc\.?)\)$/.test(d))endHair(v);else if(/^(?:accent|marcato|sf|sforzando)$/.test(d))articulation.set(v,'accent');else if(/^staccatissimo$/.test(d))articulation.set(v,'staccatissimo');else if(/^staccato$/.test(d))articulation.set(v,'staccato');else if(/^tenuto$/.test(d))articulation.set(v,'tenuto');i+=decoration[0].length;continue}
+   if(line[i]==='('){slurDepth.set(v,(slurDepth.get(v)||0)+1);i++;continue}if(line[i]===')'){slurDepth.set(v,Math.max(0,(slurDepth.get(v)||0)-1));i++;continue}
+   if(line[i]==='.'&&/^[\^_=]*[A-Ga-g]/.test(line.slice(i+1))){articulation.set(v,'staccato');i++;continue}
+   if(line[i]==='|'){accs.set(v,{});i++;while(i<line.length&&/[:|\[\]]/.test(line[i]))i++;continue}
+   const rest=line.slice(i).match(/^[zx](\d*\/\d+|\/\d+|\/|\d+)?/);if(rest){pos.set(v,pos.get(v)+frac(rest[1],unit*4));i+=rest[0].length;continue}
+   if(line[i]==='['&&!/^\[V:/.test(line.slice(i))){const end=line.indexOf(']',i);if(end>i){const inside=line.slice(i+1,end),lm=line.slice(end+1).match(/^(\d*\/\d+|\/\d+|\/|\d+)?/),d=frac(lm?.[1],unit*4),tokens=inside.match(/[\^_=]*[A-Ga-g][,']*/g)||[],vel=noteVelocity(v),pd=performedDuration(v,d);for(const t of tokens){const p=pitch(t,key,accs.get(v));if(p!=null)voices.get(v).push([pos.get(v),pd,p,articulation.get(v)==='accent'?Math.min(127,vel+20):vel])}pos.set(v,pos.get(v)+d);i=end+1+(lm?.[0]?.length||0);continue}}
+   const n=line.slice(i).match(/^([\^_=]*[A-Ga-g][,']*)(\d*\/\d+|\/\d+|\/|\d+)?/);if(n){const d=frac(n[2],unit*4),p=pitch(n[1],key,accs.get(v)),baseVel=noteVelocity(v),a=articulation.get(v),vel=a==='accent'?Math.min(127,baseVel+20):baseVel,pd=performedDuration(v,d);if(p!=null)voices.get(v).push([pos.get(v),pd,p,vel]);pos.set(v,pos.get(v)+d);i+=n[0].length;continue}
+   i++
+  }
+ }
+ const tracks=[...voices.entries()].map(([id,notes],i)=>{const name=voiceNames.get(id)||id,program=voicePrograms.has(id)?voicePrograms.get(id):abcProgramForVoice(name);return{name,program,channel:abcChannelForVoice(i,program),notes}}).filter(t=>t.notes.length);
+ if(!tracks.length)throw new Error('Keine unterstützten ABC-Noten gefunden.');
+ return{title,bpm,timeSignature:meter,tracks,abcSource:text,importedFrom:'ABC',barCount:Math.max(1,Math.ceil(Math.max(...tracks.flatMap(t=>t.notes.map(n=>n[0]+n[1])))/bar))}
+}
 function abcVelocityMap(raw){
  const marks={ppp:28,pp:38,p:50,mp:62,mf:78,f:94,ff:110,fff:122,sfz:118,ffz:122,fp:92};
  let velocity=78,pendingAccent=false,hairpin=null;
