@@ -1,7 +1,7 @@
 (()=>{'use strict';
 
 const ENGINE_NAME='Composition Engine';
-const ENGINE_VERSION='2.15.0';
+const ENGINE_VERSION='2.15.1';
 
 const COMPOSITION_CONTRACT=`KOMPAKTES PARTITURFORMAT:\nH|["Titel",BPM,Zähler,Nenner]\nV|["Instrument",Program,Channel]\nB|Takt|[[Position,Dauer,Pitch,Velocity],...]\nDanach weitere B-Zeilen oder eine neue V-Zeile. Jede Zeile ist abgeschlossen. Takt beginnt bei 1; Position und Dauer in Viertelnoten-Einheiten. Pausen sind Lücken. Notennamen werden nicht zusätzlich ausgegeben.`
 const TECHNICAL_CONTRACT=COMPOSITION_CONTRACT;
@@ -9,7 +9,8 @@ const REPRESENTATION_CONTRACTS=Object.freeze({
  compact:COMPOSITION_CONTRACT,
  abc:`ABC-NOTATION:
 Gib ausschließlich vollständige, gültige ABC-Notation aus. Verwende X:, T:, M:, L:, Q: und K:. Mehrstimmigkeit mit V:-Stimmen. Benenne Instrumente in den V:-Definitionen eindeutig und verwende bei Bedarf %%score/%%staves. Nutze musikalisch sinnvolle Dynamik (!pp! bis !fff!, Akzente, Crescendo/Diminuendo), Artikulation, Bindebögen, Phrasierung und spieltechnische Anweisungen, wenn sie zum Ausdruck der Komposition beitragen. Keine Erklärung außerhalb der ABC-Notation.`,
- lilypond:`LILYPOND-NOTATION:\nGib ausschließlich vollständigen, kompilierbaren LilyPond-Quelltext aus. Verwende \\version "2.24.0". Die LilyPond-Fassung IST die Komposition; keine zusätzliche technische Übersetzung und keine Erklärung außerhalb des Quelltexts.`,\n midi:`MIDI-PERFORMANCE-TEXT (960 PPQ):
+ lilypond:`LILYPOND-NOTATION:\nGib ausschließlich vollständigen, kompilierbaren LilyPond-Quelltext aus. Verwende \\version "2.24.0". Die LilyPond-Fassung IST die Komposition; keine zusätzliche technische Übersetzung und keine Erklärung außerhalb des Quelltexts.`,
+ midi:`MIDI-PERFORMANCE-TEXT (960 PPQ):
 H|["Titel",BPM,Zähler,Nenner]
 V|["Instrument",Program,Channel]
 N|StartTick|DauerTicks|Pitch|Velocity
