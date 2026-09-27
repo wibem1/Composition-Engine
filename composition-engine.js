@@ -1,8 +1,8 @@
 (()=>{'use strict';
 
 const ENGINE_NAME='Composition Engine';
-const ENGINE_VERSION='2.18.0';
-const BUILD=21800;
+const ENGINE_VERSION='2.19.0';
+const BUILD=21900;
 
 const COMPOSITION_CONTRACT=`KOMPAKTES PARTITURFORMAT:\nH|["Titel",BPM,Zähler,Nenner]\nV|["Instrument",Program,Channel]\nB|Takt|[[Position,Dauer,Pitch,Velocity],...]\nDanach weitere B-Zeilen oder eine neue V-Zeile. Jede Zeile ist abgeschlossen. Takt beginnt bei 1; Position und Dauer in Viertelnoten-Einheiten. Pausen sind Lücken. Notennamen werden nicht zusätzlich ausgegeben.`
 const TECHNICAL_CONTRACT=COMPOSITION_CONTRACT;
@@ -169,25 +169,27 @@ function providerName(p){return p==='anthropic'?'Anthropic / Claude':p==='google
 function localDescription(draft){const lines=String(draft||'').split(/\r?\n/).map(s=>s.trim()).filter(Boolean);const prose=lines.find(s=>!/^([#*\-]|Titel\s*:|Tonart\s*:|Tempo\s*:|Taktart\s*:|Form\s*:)/i.test(s)&&s.length>35);return String(prose||'').replace(/[*#]/g,'').slice(0,500).trim()}
 function compositionProfile(snapshot,score,draft,description){const bpm=Number(score?.bpm)||null,key=String(score?.key||score?.keySignature||score?.tonality||draftField(draft,'Tonart')||'').trim(),tempo=String(score?.tempo||score?.tempoMarking||draftField(draft,'Tempo')||'').trim(),bars=scoreBarCount(score),provider=providerName(snapshot?.provider),model=String(snapshot?.model||'').trim();const fields=[bpm?bpm+' BPM':'',tempo,key,bars+' Takte',[provider,model].filter(Boolean).join(' · ')].filter(Boolean);return{bpm,tempo,key,barCount:bars,provider,model,description:String(description||'').trim(),text:fields.join(' · ')+'\n\n'+String(description||'').trim()}}
 async function composeSourceRepresentation({snapshot,key,repeatOf=null,seriesId=null,runId,now,requestModel}){
- const representation=representationOf(snapshot),startedAt=now(),run={id:runId,testId:runId,schema:'composition-engine-2.16-source-v1',app:{name:'Composition Engine Client',version:ENGINE_VERSION},seriesId,startedAt,repeatOf,contextMode:'direct-source-composition',input:{visibleTask:snapshot.visibleTask,provider:snapshot.provider,model:snapshot.model,representation},compositionContract:REPRESENTATION_CONTRACTS[representation],events:[],aiCalls:[],requestSnapshot:structuredClone(snapshot)};
+ const representation=representationOf(snapshot),startedAt=now(),run={id:runId,testId:runId,schema:'composition-engine-2.19-source-v1',app:{name:'Composition Engine Client',version:ENGINE_VERSION},seriesId,startedAt,repeatOf,contextMode:'single-call-dual-representation',input:{visibleTask:snapshot.visibleTask,provider:snapshot.provider,model:snapshot.model,representation},compositionContract:REPRESENTATION_CONTRACTS[representation],events:[],aiCalls:[],requestSnapshot:structuredClone(snapshot)};
  const ev=(phase,data={})=>run.events.push({at:now(),phase,...data}),call=async(prompt,stage)=>requestModel({snapshot,key,promptText:prompt,stage,run,event:ev});
- ev('run_started',{note:'Quellkomposition bleibt Original; LilyPond-MIDI wird deterministisch vom Notation Tool/LilyPond-Compiler erzeugt; keine KI-MIDI-Übersetzung.'});
- const contract=REPRESENTATION_CONTRACTS[representation],formatInstruction=representation==='lilypond'?('\\n\\nVERBINDLICHES AUSGABEFORMAT:\\n'+contract):('\\n\\n'+contract);
- const source=String(await call('AUFTRAG:\\n'+snapshot.visibleTask+'\\n\\nKomponiere das Werk jetzt vollständig als Musik. Triff alle musikalischen Entscheidungen frei nach dem Auftrag.'+formatInstruction,'musical_composition')||'').trim();
- if(!source)throw new Error('Die musikalische Komposition ist leer.');
- let lilypondSource='';{const start=source.indexOf('\\\\version')>=0?source.indexOf('\\\\version'):source.indexOf('\\version');if(start>=0)lilypondSource=source.slice(start).replace(/\`\`\`\\s*$/,'').trim()}if(representation==='lilypond'&&!lilypondSource){lilypondSource=source.replace(/^\`\`\`[^\\n]*\\n?/,'').replace(/\`\`\`\\s*$/,'').trim();ev('lilypond_version_marker_missing',{note:'Ausgabe wird als LilyPond-Quelle bewahrt; Notation Tool/LilyPond übernimmt die Syntaxprüfung.'})}
- run.originalMusicalComposition=source;
- if(representation==='lilypond'){
-  const reviewPrompt='Prüfe die folgende bereits fertig komponierte LilyPond-Partitur ausschließlich technisch. Ändere weder Form, Harmonik, Rhythmus, Melodie, Besetzung noch musikalischen Ausdruck. Korrigiere nur LilyPond-/Notationsfehler, insbesondere falsche Oktavlagen durch \\relative/Apostrophe oder Kommata, unspielbar extreme Register, fehlerhafte Klammern/Bindungen und andere Syntax- oder Satzfehler. Erhalte Titel, Taktzahl und musikalischen Inhalt. Gib ausschließlich den vollständigen korrigierten LilyPond-Quelltext aus, beginnend mit \\version.\\n\\nLILYPOND-ORIGINAL:\\n'+lilypondSource;
-  const reviewed=String(await call(reviewPrompt,'lilypond_technical_review')||'').trim();
-  if(reviewed){const a=reviewed.indexOf('\\\\version')>=0?reviewed.indexOf('\\\\version'):reviewed.indexOf('\\version');const cleaned=(a>=0?reviewed.slice(a):reviewed).replace(/\`\`\`\\s*$/,'').trim();if(cleaned){lilypondSource=cleaned;ev('lilypond_technical_review_completed',{characters:cleaned.length})}}
+ if(representation!=='lilypond'){
+  ev('run_started',{note:'FREE bleibt freie Quellkomposition ohne erzwungene technische Zweitdarstellung.'});
+  const source=String(await call('AUFTRAG:\\n'+snapshot.visibleTask+'\\n\\nKomponiere das Werk jetzt vollständig als Musik. Triff alle musikalischen Entscheidungen frei nach dem Auftrag.\\n\\n'+REPRESENTATION_CONTRACTS.free,'musical_composition')||'').trim();
+  if(!source)throw new Error('Die musikalische Komposition ist leer.');
+  run.originalMusicalComposition=source;run.musicalComposition=source;run.composition=source;run.representation={requested:'free',parsed:'free-source'};run.sourceOnly=true;run.score=null;run.idea='';run.profile={bpm:null,tempo:'',key:'',barCount:null,provider:providerName(snapshot?.provider),model:String(snapshot?.model||''),description:'',text:[providerName(snapshot?.provider),String(snapshot?.model||'')].filter(Boolean).join(' · ')};run.completedAt=now();run.status='ok';ev('musical_composition_completed',{representation:'free-source',characters:source.length,aiCalls:1});return{run,midiBytes:null};
  }
- run.musicalComposition=lilypondSource||source;run.composition=run.musicalComposition;run.lilypondSource=lilypondSource||undefined;run.representation={requested:representation,parsed:lilypondSource?'lilypond':'free-source'};ev('musical_composition_completed',{representation:run.representation.parsed,characters:run.musicalComposition.length});
- let midiBytes=null,score=null;
- if(representation==='lilypond'){
-  run.score=null;run.sourceOnly=true;run.midi={bytes:null,sha256:null,note:'MIDI wird deterministisch aus der korrigierten LilyPond-Quelle durch den LilyPond-Compiler im Notation Tool erzeugt; kein KI-Aufruf.'};ev('midi_delegated_to_notation_tool',{method:'lilypond-wasm',aiCall:false});
- }else run.sourceOnly=true;
- let idea='';try{idea=String(await call(createPrompts(snapshot,source).compositionIdea,'composition_analysis_afterwards')||'').trim()}catch(e){ev('composition_analysis_failed',{message:e?.message||String(e)})}run.idea=idea;run.profile=score?compositionProfile(snapshot,score,'',idea):{bpm:null,tempo:'',key:'',barCount:null,provider:providerName(snapshot?.provider),model:String(snapshot?.model||''),description:idea,text:[providerName(snapshot?.provider),String(snapshot?.model||'')].filter(Boolean).join(' · ')+'\\n\\n'+idea};run.completedAt=now();run.status='ok';return{run,midiBytes};
+ ev('run_started',{note:'Ein einziger KI-Aufruf komponiert das Werk und liefert dieselbe Musik parallel als LilyPond und kompaktes Performance-Modell. MIDI wird daraus lokal deterministisch gebaut.'});
+ const prompt='AUFTRAG:\\n'+snapshot.visibleTask+'\\n\\nKomponiere das Werk genau EINMAL. Gib dieselbe fertige Komposition anschließend innerhalb DIESER EINEN Antwort in zwei synchronen Darstellungen aus. Die beiden Abschnitte müssen musikalisch identisch sein; der zweite Abschnitt ist keine Neukomposition.\\n\\n===LILYPOND===\\nVollständiger kompilierbarer LilyPond-Quelltext, beginnend mit \\\\version "2.24.0". Achte besonders auf realistische spielbare Register und korrekte Oktavlagen bei \\\\relative.\\n\\n===PERFORMANCE===\\n'+COMPOSITION_CONTRACT+'\\n\\nKeine Erklärung, kein Markdown und kein weiterer Text außerhalb dieser beiden Abschnitte.';
+ const source=String(await call(prompt,'musical_composition')||'').trim();
+ if(!source)throw new Error('Die musikalische Komposition ist leer.');
+ const lpMark='===LILYPOND===',perfMark='===PERFORMANCE===',lpAt=source.indexOf(lpMark),perfAt=source.indexOf(perfMark);
+ if(lpAt<0||perfAt<0||perfAt<=lpAt)throw new Error('Die gemeinsame LilyPond/Performance-Ausgabe ist unvollständig.');
+ let lilypondSource=source.slice(lpAt+lpMark.length,perfAt).trim(),performanceSource=source.slice(perfAt+perfMark.length).trim();
+ if(lilypondSource.startsWith('```')){const nl=lilypondSource.indexOf('\\n');if(nl>=0)lilypondSource=lilypondSource.slice(nl+1);if(lilypondSource.endsWith('```'))lilypondSource=lilypondSource.slice(0,-3).trim()}
+ if(performanceSource.startsWith('```')){const nl=performanceSource.indexOf('\\n');if(nl>=0)performanceSource=performanceSource.slice(nl+1);if(performanceSource.endsWith('```'))performanceSource=performanceSource.slice(0,-3).trim()}
+ if(!lilypondSource)throw new Error('LilyPond-Abschnitt ist leer.');
+ const score=extractCompactScore(performanceSource);
+ const midiBytes=buildMidi(score),buf=midiBytes.buffer.slice(midiBytes.byteOffset,midiBytes.byteOffset+midiBytes.byteLength),midiHash=await sha256Buffer(buf);
+ run.originalMusicalComposition=source;run.musicalComposition=lilypondSource;run.composition=lilypondSource;run.lilypondSource=lilypondSource;run.performanceSource=performanceSource;run.score=score;run.sourceOnly=false;run.representation={requested:'lilypond',parsed:'lilypond+compact-performance'};run.midi={bytes:midiBytes.byteLength,sha256:midiHash,note:'Lokal deterministisch aus den im selben Kompositionsaufruf mitgelieferten kompakten Performance-Daten erzeugt; kein zweiter KI-Aufruf und keine LilyPond→MIDI-Rekonstruktion.'};run.idea='';run.profile=compositionProfile(snapshot,score,'','');ev('musical_composition_completed',{representation:'lilypond+compact-performance',characters:source.length,aiCalls:1});ev('midi_generated',{bytes:midiBytes.byteLength,sha256:midiHash,source:'same-call-performance'});run.completedAt=now();run.status='ok';return{run,midiBytes};
 }
 async function compose({snapshot,key,repeatOf=null,seriesId=null,runId,now,requestModel,usedTitles=[]}){
  if(['lilypond','free'].includes(representationOf(snapshot)))return composeSourceRepresentation({snapshot,key,repeatOf,seriesId,runId,now,requestModel});
