@@ -2,6 +2,15 @@
 
 Stand: 2026-09-27. Dieses Dokument ist ein Entwicklungsprotokoll und ersetzt keine noch ausstehende historische Rekonstruktion.
 
+## Unverletzbare Architekturregel: Komposition vor Technik
+Die komponierende Instanz arbeitet ausschließlich musikalisch. Sie darf beim Komponieren **keinen** technischen Ausgabeformatvertrag und keine Anforderungen oder Beschränkungen von ABC, MIDI, Compact, MusicXML, Parser, Export oder Playback berücksichtigen müssen.
+
+Erst nachdem die musikalische Komposition abgeschlossen ist, beginnt eine getrennte technische Realisation. Diese zweite Stufe hat kein Mandat zur Neukomposition: Sie darf die fertige Musik nicht vereinfachen, regularisieren oder aus technischen Gründen musikalisch umformen. Die technische Realisation hat sich der musikalischen Idee anzupassen, nicht die musikalische Idee der technischen Realisation.
+
+Diese Regel konkretisiert das Bauch/Kopf/Hand-Prinzip und ist eine Regression-Invariante. Erweiterungen von Parser, Ausdruck, Export oder Playback dürfen niemals zusätzliche technische Pflichten in den kreativen Kompositionsprompt zurücktragen. Ein automatisierter Test muss dies für jedes Release prüfen.
+
+Historischer Anlass: Diese Trennung war bereits früher als wesentlich für kreative Ergebnisse erkannt worden. Wiederholte spätere Vermischungen von Komposition und technischer Umsetzung führten erneut zu als brav/langweilig beurteilten Ergebnissen und verursachten vermeidbare Fehlersuche. Die Regel ist deshalb nicht optional und darf nicht stillschweigend aufgeweicht werden.
+
 ## Grundsatz
 Jeder Entwicklungsstand der gemeinsamen Composition Engine und jedes Host-Releases muss über unveränderliche Git-Commit-SHAs rekonstruierbar sein. Host-Version und Engine-Version sind getrennt: reine Engine-Änderungen dürfen die App-Version nicht erhöhen. Die App muss die tatsächlich geladene Engine-Version und ihren Build anzeigen; das Infofenster ist entsprechend aktuell zu halten.
 
