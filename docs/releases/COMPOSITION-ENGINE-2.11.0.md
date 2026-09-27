@@ -2,7 +2,7 @@
 
 Datum: 2026-09-27  
 Vorgänger: 2.10.1  
-Status: Testkandidat bis erfolgreicher CI- und Host-Praxistest.
+Status: In main übernommen; Engine-Regressionssuite nach Merge erfolgreich. Host-Praxistest mit neu erzeugter Komposition noch offen.
 
 ## Anlass
 Minimal Composer 1.0.3 erzeugte für den Auftrag „Erstelle ein Stück für Cello und Klavier“ eine gültige dreistimmige ABC-Partitur (Cello, Klavier Diskant, Klavier Bass). Die bisherige Engine erkannte die Cellonoten, wies aber allen nicht als Violine erkannten Stimmen General-MIDI-Programm 0 (Klavier) zu. Dadurch ging die Instrumentierung bei ABC→MIDI verloren.
@@ -31,4 +31,4 @@ Regressionen prüfen: bestehende COMPACT/MIDI/FREE-Funktionen, drei ABC-Stimmen,
 Ein grüner technischer Regressionstest beweist weder musikalische Qualität noch vollständige Unterstützung der gesamten ABC-Spezifikation. Insbesondere komplexe Ornamentik, Pedal, kontinuierliche Controllerkurven und instrumentenspezifische Extended Techniques benötigen weitere gezielte Ausbaustufen und Hörtests.
 
 ## Wiederherstellung
-Entwicklungszweig: `dev/abc-performance-2.11.0`. Exakte Release-/Merge-SHA wird nach Übernahme in main ergänzt.
+Entwicklungszweig: `dev/abc-performance-2.11.0`. Merge-/Release-SHA: `85837c33c08b567423259fa6e89e9512466730bd`.
