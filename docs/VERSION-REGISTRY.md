@@ -42,3 +42,19 @@ Minimal Composer 1.0.0 (9e73bb8210a82864a1211d32e959d52beb9ef2f1) und Compositio
 6. Historische Entwicklungslinien und Archive nie als Ersatz für die aktuelle Produktivlinie überschreiben.
 
 Die Regeln gelten für **alle** Projekte, nicht nur die beiden bereits archivierten Versionen. Noch fehlende Releases und tatsächliche Laufzeitkombinationen bleiben explizit offen.
+
+## Pflichtdokumentation zu JEDEM Versionseintrag
+
+Ein Registereintrag ist erst vollständig, wenn er auf eine eigene, versionierte Änderungsdokumentation (Release Notes) verweist. Für frühere Versionen wird diese nachträglich **nur anhand belegbarer Commits, Tests und Diagnosen** rekonstruiert. Unbekannte Angaben ausdrücklich als unbekannt kennzeichnen.
+
+Jede Versionsdokumentation enthält:
+
+1. **Kurzbeschreibung:** Was ist an dieser Version neu, und welches Problem sollte gelöst werden? In verständlicher Sprache, nicht nur Commit-Titel.
+2. **Änderungen nach Bereichen:** Neue Funktionen, geändertes Verhalten und Bedienung, Fehlerkorrekturen, interne Architektur; jeweils konkret und überprüfbar.
+3. **Unverändertes und Kompatibilität:** Betroffene Hosts/Module, API-Änderungen, Abhängigkeiten und tatsächlich getestete Kombinationen.
+4. **Bekannte Einschränkungen und Regressionen:** Auch nachträglich erkannte Fehler mit Datum und Verweis auf den späteren Fix.
+5. **Nachweise:** Git-Commit(s), Pull Requests, Build-/CI-Ergebnisse, Diagnosen und gegebenenfalls musikalische Hörbeurteilung. Technischer Erfolg ist kein Nachweis musikalischer Qualität.
+6. **Wiederherstellung:** Quellcode-SHA, Engine-/Modul-SHAs, fest gepinnte Abhängigkeiten, Build- oder Startanleitung und Status der praktischen Prüfung.
+7. **Vergleich mit Vorgänger:** Link zur unmittelbar vorherigen Version und verständliche Zusammenfassung der Unterschiede.
+
+Vorgeschlagener Ablagepfad pro Projekt: `docs/releases/<APP-ODER-MODUL>-<VERSION>.md`. Das zentrale Register verlinkt die jeweilige Datei. Release Notes werden nach Veröffentlichung nicht stillschweigend umgeschrieben; nachträgliche Erkenntnisse werden als datierte Ergänzungen ausgewiesen. Fehlende historische Dokumentation bleibt im Register sichtbar als **offen**, niemals als erledigt.
