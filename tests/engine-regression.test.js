@@ -4,7 +4,7 @@ const sandbox={window:{},crypto:require('crypto').webcrypto,TextEncoder,structur
 sandbox.globalThis=sandbox.window;
 vm.createContext(sandbox);vm.runInContext(source,sandbox);
 const engine=sandbox.window.CompositionEngine;
-assert.strictEqual(engine.version,'2.11.1');
+assert.strictEqual(engine.version,'2.12.0');
 assert.ok(engine.representations.compact&&engine.representations.abc&&engine.representations.midi&&engine.representations.free);
 
 const compact='H|["Test",96,4,4]\nV|["Piano",0,0]\nB|1|[[0,1,60,72],[1,1,64,76]]';
@@ -19,15 +19,17 @@ const free=engine.parseCompositionRepresentation('FORMAT|MIDI\n'+midi,'free');
 assert.strictEqual(free.format,'midi');
 
 
-assert.ok(source.includes('VERGEBENE WERKTITEL'),'prior titles must be included in composition prompt');
-const pABC=engine.createPrompts({visibleTask:'Test',representation:'abc'}).composition;
-const pMIDI=engine.createPrompts({visibleTask:'Test',representation:'midi'}).composition;
-const pFree=engine.createPrompts({visibleTask:'Test',representation:'free'}).composition;
-assert.ok(pABC.includes('ABC-NOTATION'));assert.ok(pMIDI.includes('960 PPQ'));assert.ok(pFree.includes('FORMAT|COMPACT'));
-assert.strictEqual(typeof engine.analyzeScore,'function');assert.strictEqual(typeof engine.improveScore,'function');
-assert.ok(source.includes("contextMode:'single-creative-source'"));assert.ok(!source.includes("'midi_translation'"));
+const creative=engine.createPrompts({visibleTask:'Test',representation:'abc'}).composition;
+for(const forbidden of ['ABC-NOTATION','960 PPQ','FORMAT|COMPACT','MIDI-PERFORMANCE','KOMPAKTES PARTITURFORMAT','MusicXML']) assert.ok(!creative.includes(forbidden),'creative prompt must not expose technical representation: '+forbidden);
+assert.ok(creative.includes('ausschließlich als Musik')&&creative.includes('technische Realisation erfolgt erst danach'),'creative/technical separation must be explicit');
+const realization=engine.createPrompts({visibleTask:'Test',representation:'abc'},'FERTIGE MUSIK').realization;
+assert.ok(realization.includes('ABC-NOTATION'),'technical realization must receive the selected output contract');
+assert.ok(realization.includes('Komponiere NICHT neu')&&realization.includes('Vereinfache, regularisiere oder verschönere die Musik NICHT'),'realizer must preserve the completed composition');
+assert.ok(source.includes("contextMode:'creative-technical-separation'"));
+assert.ok(source.includes("'musical_composition'")&&source.includes("'technical_realization'"));
 assert.ok(source.includes("const analysisSource=(parsedFormat==='abc'||parsedFormat==='midi'||parsedFormat==='compact')?rawComposition:JSON.stringify(scoreToCompact(score));"));
-console.log('Composition Engine 2.11.1 consolidated regression tests: OK');
+assert.strictEqual(typeof engine.analyzeScore,'function');assert.strictEqual(typeof engine.improveScore,'function');
+console.log('Composition Engine 2.12.0 creative/technical separation regression: OK');
 
 const abc=`X:1
 T:Three voices
