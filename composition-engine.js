@@ -1,7 +1,8 @@
 (()=>{'use strict';
 
 const ENGINE_NAME='Composition Engine';
-const ENGINE_VERSION='2.17.0';
+const ENGINE_VERSION='2.18.0';
+const BUILD=21800;
 
 const COMPOSITION_CONTRACT=`KOMPAKTES PARTITURFORMAT:\nH|["Titel",BPM,Zähler,Nenner]\nV|["Instrument",Program,Channel]\nB|Takt|[[Position,Dauer,Pitch,Velocity],...]\nDanach weitere B-Zeilen oder eine neue V-Zeile. Jede Zeile ist abgeschlossen. Takt beginnt bei 1; Position und Dauer in Viertelnoten-Einheiten. Pausen sind Lücken. Notennamen werden nicht zusätzlich ausgegeben.`
 const TECHNICAL_CONTRACT=COMPOSITION_CONTRACT;
@@ -170,7 +171,7 @@ function compositionProfile(snapshot,score,draft,description){const bpm=Number(s
 async function composeSourceRepresentation({snapshot,key,repeatOf=null,seriesId=null,runId,now,requestModel}){
  const representation=representationOf(snapshot),startedAt=now(),run={id:runId,testId:runId,schema:'composition-engine-2.16-source-v1',app:{name:'Composition Engine Client',version:ENGINE_VERSION},seriesId,startedAt,repeatOf,contextMode:'direct-source-composition',input:{visibleTask:snapshot.visibleTask,provider:snapshot.provider,model:snapshot.model,representation},compositionContract:REPRESENTATION_CONTRACTS[representation],events:[],aiCalls:[],requestSnapshot:structuredClone(snapshot)};
  const ev=(phase,data={})=>run.events.push({at:now(),phase,...data}),call=async(prompt,stage)=>requestModel({snapshot,key,promptText:prompt,stage,run,event:ev});
- ev('run_started',{note:'Quellkomposition bleibt Original; MIDI wird bei LilyPond separat als Wiedergabefassung erzeugt.'});
+ ev('run_started',{note:'Quellkomposition bleibt Original; LilyPond-MIDI wird deterministisch vom Notation Tool/LilyPond-Compiler erzeugt; keine KI-MIDI-Übersetzung.'});
  const contract=REPRESENTATION_CONTRACTS[representation],formatInstruction=representation==='lilypond'?('\\n\\nVERBINDLICHES AUSGABEFORMAT:\\n'+contract):('\\n\\n'+contract);
  const source=String(await call('AUFTRAG:\\n'+snapshot.visibleTask+'\\n\\nKomponiere das Werk jetzt vollständig als Musik. Triff alle musikalischen Entscheidungen frei nach dem Auftrag.'+formatInstruction,'musical_composition')||'').trim();
  if(!source)throw new Error('Die musikalische Komposition ist leer.');
@@ -184,9 +185,7 @@ async function composeSourceRepresentation({snapshot,key,repeatOf=null,seriesId=
  run.musicalComposition=lilypondSource||source;run.composition=run.musicalComposition;run.lilypondSource=lilypondSource||undefined;run.representation={requested:representation,parsed:lilypondSource?'lilypond':'free-source'};ev('musical_composition_completed',{representation:run.representation.parsed,characters:run.musicalComposition.length});
  let midiBytes=null,score=null;
  if(representation==='lilypond'){
-  const midiPrompt='Erzeuge aus der folgenden bereits fertig komponierten LilyPond-Partitur ausschließlich eine klanglich und zeitlich getreue MIDI-Wiedergabefassung. Komponiere NICHT neu. Die LilyPond-Partitur bleibt das maßgebliche Original.\\n\\nLILYPOND-ORIGINAL:\\n'+lilypondSource+'\\n\\nAUSGABEFORMAT:\\n'+REPRESENTATION_CONTRACTS.midi;
-  const midiText=String(await call(midiPrompt,'midi_translation')||'').trim();if(!midiText)throw new Error('MIDI-Wiedergabefassung ist leer.');
-  score=extractMidiPerformanceScore(midiText);const hm=lilypondSource.match(/\\btitle\\s*=\\s*"([^"]+)"/);if(hm?.[1])score.title=hm[1].trim();run.score=score;run.midiPerformanceText=midiText;midiBytes=buildMidi(score);const buf=midiBytes.buffer.slice(midiBytes.byteOffset,midiBytes.byteOffset+midiBytes.byteLength),midiHash=await sha256Buffer(buf);run.midi={bytes:midiBytes.byteLength,sha256:midiHash,note:'Separate Wiedergabefassung aus dem unveränderten LilyPond-Original.'};run.sourceOnly=false;ev('midi_generated',{bytes:midiBytes.byteLength,sha256:midiHash,tracks:score.tracks?.length||0});
+  run.score=null;run.sourceOnly=true;run.midi={bytes:null,sha256:null,note:'MIDI wird deterministisch aus der korrigierten LilyPond-Quelle durch den LilyPond-Compiler im Notation Tool erzeugt; kein KI-Aufruf.'};ev('midi_delegated_to_notation_tool',{method:'lilypond-wasm',aiCall:false});
  }else run.sourceOnly=true;
  let idea='';try{idea=String(await call(createPrompts(snapshot,source).compositionIdea,'composition_analysis_afterwards')||'').trim()}catch(e){ev('composition_analysis_failed',{message:e?.message||String(e)})}run.idea=idea;run.profile=score?compositionProfile(snapshot,score,'',idea):{bpm:null,tempo:'',key:'',barCount:null,provider:providerName(snapshot?.provider),model:String(snapshot?.model||''),description:idea,text:[providerName(snapshot?.provider),String(snapshot?.model||'')].filter(Boolean).join(' · ')+'\\n\\n'+idea};run.completedAt=now();run.status='ok';return{run,midiBytes};
 }
@@ -213,5 +212,5 @@ async function compose({snapshot,key,repeatOf=null,seriesId=null,runId,now,reque
  return{run,midiBytes};
 }
 
-window.CompositionEngine=Object.freeze({name:ENGINE_NAME,version:ENGINE_VERSION,representations:REPRESENTATION_CONTRACTS,compose,analyzeScore,analyzeImprovement,improveScore,COMPOSITION_CONTRACT,TECHNICAL_CONTRACT,createPrompts,criticalAnalysisPrompt,postImprovementAnalysisPrompt,approvedImprovementPrompt,scoreToCompact,exportABC,exportMusicXML,playbackScore,performanceSnapshot,expressionAudit,mergeTitleRegistry,duplicateTitlePrompt,makeRequest,actualRequest,extractText,extractJson,findScore,findIdea,sha256Text,sha256Buffer,buildMidi,parseABC,extractCompactScore,extractMidiPerformanceScore,parseCompositionRepresentation});
+window.CompositionEngine=Object.freeze({name:ENGINE_NAME,version:ENGINE_VERSION,BUILD,representations:REPRESENTATION_CONTRACTS,compose,analyzeScore,analyzeImprovement,improveScore,COMPOSITION_CONTRACT,TECHNICAL_CONTRACT,createPrompts,criticalAnalysisPrompt,postImprovementAnalysisPrompt,approvedImprovementPrompt,scoreToCompact,exportABC,exportMusicXML,playbackScore,performanceSnapshot,expressionAudit,mergeTitleRegistry,duplicateTitlePrompt,makeRequest,actualRequest,extractText,extractJson,findScore,findIdea,sha256Text,sha256Buffer,buildMidi,parseABC,extractCompactScore,extractMidiPerformanceScore,parseCompositionRepresentation});
 })();
