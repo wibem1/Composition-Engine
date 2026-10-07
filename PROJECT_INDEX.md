@@ -54,3 +54,18 @@ Kein vorgeschalteter musikalischer Entwurf/Formplan/Klangkonzept als eigene krea
 ## Repository-Bestand – verifiziert 2026-09-26
 
 Aktive/erhaltene Repositories der Musikprojekte: Composition-Engine, Minimal-Composer, Music-Chat-Lab, Composition-Lab-Native, Composition-Studio, Notation-Module, Tune-Search-Module, Composition-Studio-MiniDAW-Archive sowie abctools als externe Referenz. Das zuvor beobachtete leere Repository `Composition--Studio` ist in der aktuell ueber die GitHub-Verbindung sichtbaren installierten Repository-Liste nicht mehr enthalten; daraus wird ohne separate Loeschbestaetigung keine Aussage ueber eine erfolgte Loeschung abgeleitet.
+
+## Entwicklungsentscheidung – 07.10.2026
+
+Vom Nutzer bestätigt: Eindeutig überholte Apps werden aus der aktiven Entwicklung genommen; vorhandene Quellen bleiben als historische Referenz erhalten.
+
+| Projekt | Entwicklungsstatus | Technisch verifizierter Zustand |
+|---|---|---|
+| Composer Lab / ComposeLab, früher `wibem1/Composer-Lab` | HISTORICAL / DEVELOPMENT CLOSED. Vorläufer von MusicChat; keine neuen Funktionen, Reparaturen oder Integration als aktive Architekturquelle. | Am 07.10.2026 liefert der GitHub-Zugriff auf den früheren Repository-Namen 404. Keine Aussage, dass das Repository gelöscht oder neu archiviert wurde. Falls ein historischer Quellbestand wiedergefunden wird, bleibt er Referenz ohne aktive Entwicklung. |
+| Composition Studio MiniDAW, `wibem1/Composition-Studio-MiniDAW-Archive` | ARCHIVED / DEVELOPMENT CLOSED. Kein nutzbarer freigegebener Benutzerstand; keine aktive Abhängigkeit anderer Apps. | GitHub `archived=true` am 07.10.2026 erneut verifiziert. Bereits archiviert; keine Änderung oder Löschung des Quellbestands erforderlich. |
+
+Diese Entscheidung betrifft ausschließlich die beiden eindeutig historischen Projekte. Kompositionslabor v0.4.7, LilyPond Tools und Notation Module sind nur als möglicherweise entbehrliche eigenständige Benutzer-Apps diskutiert; sie werden durch diese Entscheidung nicht archiviert. Minimal Composer, ComposeMe, CompactScore und die übrigen spezialisierten Apps bleiben erhalten, bis ihre Kompositionsverfahren und Aufgaben verglichen sind.
+
+Die aktive REAPER-App `wibem1/Composition-Studio` ist ausdrücklich nicht die archivierte MiniDAW und bleibt von dieser Entscheidung unberührt. Eine Wiederaufnahme historischer Projekte erfordert einen neuen ausdrücklichen Auftrag des Nutzers.
+
+Hinweis zur Einordnung: Die obigen Versionstabellen sind mit Stand 26.09.2026 historisch. Aus ihnen darf kein aktueller Versions- oder SAFE-Status abgeleitet werden; vor Änderungen muss der tatsächliche aktuelle Code geprüft werden.
