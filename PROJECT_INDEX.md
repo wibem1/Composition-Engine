@@ -69,3 +69,17 @@ Diese Entscheidung betrifft ausschließlich die beiden eindeutig historischen Pr
 Die aktive REAPER-App `wibem1/Composition-Studio` ist ausdrücklich nicht die archivierte MiniDAW und bleibt von dieser Entscheidung unberührt. Eine Wiederaufnahme historischer Projekte erfordert einen neuen ausdrücklichen Auftrag des Nutzers.
 
 Hinweis zur Einordnung: Die obigen Versionstabellen sind mit Stand 26.09.2026 historisch. Aus ihnen darf kein aktueller Versions- oder SAFE-Status abgeleitet werden; vor Änderungen muss der tatsächliche aktuelle Code geprüft werden.
+
+## Ergänzende Stilllegungsentscheidung – 07.10.2026
+
+Nach Funktionsüberschneidungen mit neueren Anwendungen hat der Nutzer außerdem der Archivierung folgender eigenständiger Apps zugestimmt. Dieser Abschnitt ersetzt für diese drei Apps die oben noch offene Einordnung.
+
+| Projekt | Entwicklungsentscheidung | Erhaltener Bestand / mögliche Nachfolge |
+|---|---|---|
+| Minimal Composer, `wibem1/Minimal-Composer` | Eigenständige App eingestellt; keine weitere Funktionsentwicklung ohne neuen ausdrücklichen Auftrag. | Historische Verfahren, Diagnosen und Quellen bleiben erhalten. ComposeMe und LilyPond Composition Lab übernehmen verwandte Aufgaben; eine vollständige Funktionsgleichheit wurde nicht behauptet. |
+| LilyPond Tools, `wibem1/LilyPond-Tools` | Eigenständige Test-App eingestellt. | Der technische Ansatz des lokalen LilyPond-WASM-Renderings bleibt als Referenz erhalten; die verwandte Benutzerfunktion befindet sich in Notation Tools. |
+| Notation Module, `wibem1/Notation-Module` | Eigenständige Test-/Benutzer-App eingestellt. | Wiederverwendbarer Modulcode bleibt erhalten. Abhängigkeiten und notwendige Pflege des Moduls sind von der Stilllegung seiner Benutzer-App zu unterscheiden. Notation Tools und ABC Tools bieten verwandte Benutzerfunktionen. |
+
+Technischer Archivierungsstatus: In diesem Arbeitsgang wurde die Entwicklungsentscheidung im Projektindex gespeichert. Die verfügbare GitHub-Verbindung bietet keinen Aufruf zum Setzen von `archived=true`; eine technische GitHub-Archivierung dieser drei Repositories wurde deshalb nicht ausgeführt und darf nicht als erledigt bezeichnet werden. Es wurden weder Quellen gelöscht noch aktive Modulabhängigkeiten entfernt.
+
+ComposeMe ist noch nicht stillgelegt. Der Nutzer erwägt, statt einer größeren Überarbeitung dessen besondere stufenweise Kompositionsabläufe optional in LilyPond Composition Lab zu übernehmen. Dazu ist noch keine Umsetzung beschlossen. Der bestehende direkte Ablauf von LilyPond Composition Lab bleibt unverändert. Welche ComposeMe-Verfahren übernommen werden sollen (z. B. Klangvorstellung → Komposition oder vollständige Komposition → technische Umsetzung), muss vor einer Implementierung konkret festgelegt werden. Erst nach einer geprüften Übernahme wäre eine Stilllegung von ComposeMe zu entscheiden.
