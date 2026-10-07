@@ -99,3 +99,12 @@ Der Nutzer hat der Zusammenführung durch gezielte Funktionsübernahme und ansch
 Nicht übernommen: historische JSON-/MIDI-Engine, direkte MIDI-Dateierzeugung mit Code Interpreter, allgemeine Mehrformat-Ausgabe und klassisches dreistufiges Verfahren. Diese bleiben Referenzen in ComposeMe. Es wird weder vollständige Funktionsgleichheit noch musikalische Überlegenheit des neuen optionalen Ablaufs behauptet. Die KI-Tests verwendeten simulierte Antworten, keine kostenpflichtigen Kompositionen; ein musikalischer Hörtest wurde nicht durchgeführt.
 
 Technische GitHub-Archivierung von ComposeMe (`archived=true`) **noch nicht ausgeführt**: Die vorhandene Verbindung bietet keine Repository-Administration. Dokumentierte Entwicklungsstilllegung und GitHub-Schreibschutz sind ausdrücklich getrennt. Quellen und bestehende Browser-Verläufe wurden nicht gelöscht oder automatisch migriert.
+
+
+## LilyPond v0.1.37 – Oktavnotation und Instrumentzuordnung · 07.10.2026
+
+Aktueller LilyPond-Stand: **v0.1.37 / CURRENT TEST CANDIDATE**, main, GitHub `93dcd3ec23a17bb212cb75ec7a8a3cbb0930ea50`; Sites-Quelle `8adb3ab5888ed041a49081e7a9c6f92a7a79bc6d`. Veröffentlichung im bestehenden Projekt erfolgreich. Ersetzt v0.1.36 als aktuellen Kandidaten; praktische Nutzerabnahme noch ausstehend.
+
+Auf ausdrücklichen Nutzerwunsch enthalten die sichtbaren allgemeinen Standardanweisungen konkrete absolute Oktavnotation für alle Modelle und beide Kompositionsverfahren. Unveränderte alte Standardvorgaben werden aktualisiert; eigene Bearbeitungen bleiben erhalten. Bereichsprüfung bleibt kostenfreie rechnerische Kontrolle, ohne KI-Korrekturaufrufe.
+
+Behoben: gültiges Scheme-Präfix bei MIDI-Instrumentnamen wurde in gemischten Besetzungen nicht erkannt. Zugehörige Zuordnung für alle 28 Instrumente mit begrenztem Bereichsprofil einschließlich fünf bisher fehlender Streicher-/Blechgruppen ergänzt. 84 Zuordnungstests und alle 16 Testprogramme bestanden; Build und Artefakt validiert. Der konkrete hochgeladene Quelltext (Diagnose 03d5976d05fd4992b547aba15e014c52) besteht lokale Bereichs- und Oktavzeichenprüfung; vollständige Cellostimme unverändert. Ein zusätzlicher Online-Render dieses privaten Stücks wurde durch die automatische Freigabeprüfung abgelehnt und nicht erneut versucht; kein neuer Live-MIDI-/Hörtest dieses Stücks behauptet. Quellen oder Benutzerstücke wurden nicht durch diesen Eintrag veröffentlicht.
