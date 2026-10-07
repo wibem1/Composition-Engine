@@ -82,4 +82,20 @@ Nach Funktionsüberschneidungen mit neueren Anwendungen hat der Nutzer außerdem
 
 Technischer Archivierungsstatus: In diesem Arbeitsgang wurde die Entwicklungsentscheidung im Projektindex gespeichert. Die verfügbare GitHub-Verbindung bietet keinen Aufruf zum Setzen von `archived=true`; eine technische GitHub-Archivierung dieser drei Repositories wurde deshalb nicht ausgeführt und darf nicht als erledigt bezeichnet werden. Es wurden weder Quellen gelöscht noch aktive Modulabhängigkeiten entfernt.
 
-ComposeMe ist noch nicht stillgelegt. Der Nutzer erwägt, statt einer größeren Überarbeitung dessen besondere stufenweise Kompositionsabläufe optional in LilyPond Composition Lab zu übernehmen. Dazu ist noch keine Umsetzung beschlossen. Der bestehende direkte Ablauf von LilyPond Composition Lab bleibt unverändert. Welche ComposeMe-Verfahren übernommen werden sollen (z. B. Klangvorstellung → Komposition oder vollständige Komposition → technische Umsetzung), muss vor einer Implementierung konkret festgelegt werden. Erst nach einer geprüften Übernahme wäre eine Stilllegung von ComposeMe zu entscheiden.
+Die frühere offene Entscheidung zu ComposeMe wurde durch die nachfolgende bestätigte Übernahme und Stilllegung ersetzt.
+
+
+## ComposeMe → LilyPond: Übernahme und Stilllegung – 07.10.2026
+
+Der Nutzer hat der Zusammenführung durch gezielte Funktionsübernahme und anschließende Stilllegung zugestimmt. Umsetzung im bestehenden LilyPond-Projekt; keine neue App oder Parallelversion.
+
+| Projekt | Verifizierter Stand | Entwicklungsstatus |
+|---|---|---|
+| LilyPond Composition Lab, `wibem1/LilyPond-Composition-Lab` | v0.1.36, main, GitHub `cfabacf81ad677ae351e45b6253fd650d26e73d3`; Sites-Quellstand `abc6ebe032a98a076db486e5e30e5941a7069a87`; Veröffentlichung im bestehenden Projekt erfolgreich. | CURRENT / TEST CANDIDATE. Build, alle 16 Testprogramme und Artefaktvalidierung bestanden. Praktische Nutzerabnahme von v0.1.36 steht aus; v0.1.35 war vom Nutzer bestätigt. |
+| ComposeMe, `wibem1/ComposeMe` | Funktionaler Bestand 0.8.52 erhalten; Stilllegungsdokumentation `87595004dce735088e455d3059df5949604b74ac`. | HISTORICAL / DEVELOPMENT CLOSED. Keine weitere Funktionsentwicklung oder Reparatur ohne neuen ausdrücklichen Auftrag. README und ARCHIVE.md nennen den Nachfolger und den erhaltenen Referenzbestand. |
+
+Übernommen: optionale bearbeitbare Klangvorstellung → direkte LilyPond-Ausarbeitung, persistenter Zwischenstand mit Fortsetzen ohne erneuten ersten KI-Aufruf, separate Modelle/Qualitätsstufen/Kosten/Dauer beider Phasen, gemeinsame Diagnose sowie vollständige Sicherung und Wiederherstellung des Verlaufs einschließlich MIDI-/SVG-Dateien. Der bisherige direkte LilyPond-Ablauf bleibt Standard; bestehende Compiler-, Oktav-, Notations- und Wiedergabefunktionen werden verwendet.
+
+Nicht übernommen: historische JSON-/MIDI-Engine, direkte MIDI-Dateierzeugung mit Code Interpreter, allgemeine Mehrformat-Ausgabe und klassisches dreistufiges Verfahren. Diese bleiben Referenzen in ComposeMe. Es wird weder vollständige Funktionsgleichheit noch musikalische Überlegenheit des neuen optionalen Ablaufs behauptet. Die KI-Tests verwendeten simulierte Antworten, keine kostenpflichtigen Kompositionen; ein musikalischer Hörtest wurde nicht durchgeführt.
+
+Technische GitHub-Archivierung von ComposeMe (`archived=true`) **noch nicht ausgeführt**: Die vorhandene Verbindung bietet keine Repository-Administration. Dokumentierte Entwicklungsstilllegung und GitHub-Schreibschutz sind ausdrücklich getrennt. Quellen und bestehende Browser-Verläufe wurden nicht gelöscht oder automatisch migriert.
