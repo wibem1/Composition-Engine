@@ -108,3 +108,11 @@ Aktueller LilyPond-Stand: **v0.1.37 / CURRENT TEST CANDIDATE**, main, GitHub `93
 Auf ausdrücklichen Nutzerwunsch enthalten die sichtbaren allgemeinen Standardanweisungen konkrete absolute Oktavnotation für alle Modelle und beide Kompositionsverfahren. Unveränderte alte Standardvorgaben werden aktualisiert; eigene Bearbeitungen bleiben erhalten. Bereichsprüfung bleibt kostenfreie rechnerische Kontrolle, ohne KI-Korrekturaufrufe.
 
 Behoben: gültiges Scheme-Präfix bei MIDI-Instrumentnamen wurde in gemischten Besetzungen nicht erkannt. Zugehörige Zuordnung für alle 28 Instrumente mit begrenztem Bereichsprofil einschließlich fünf bisher fehlender Streicher-/Blechgruppen ergänzt. 84 Zuordnungstests und alle 16 Testprogramme bestanden; Build und Artefakt validiert. Der konkrete hochgeladene Quelltext (Diagnose 03d5976d05fd4992b547aba15e014c52) besteht lokale Bereichs- und Oktavzeichenprüfung; vollständige Cellostimme unverändert. Ein zusätzlicher Online-Render dieses privaten Stücks wurde durch die automatische Freigabeprüfung abgelehnt und nicht erneut versucht; kein neuer Live-MIDI-/Hörtest dieses Stücks behauptet. Quellen oder Benutzerstücke wurden nicht durch diesen Eintrag veröffentlicht.
+
+## Gemeinsamer Workflow-Kern · 19.10.2026
+
+Lokaler TEST CANDIDATE: workflow-core 1.0.0, Composition Studio 1.1.0 (Basis main d307d19), AI Notation Studio 0.11.0 (Basis main c6a657c), Maestro-Quellintegration auf Basis Windows 2.5.1. Gemeinsame Regeln werden aus einer Spezifikation für Lua, JavaScript und Python erzeugt. Kein Ersatz des vorhandenen composition-engine.js, kein SAFE-Status und keine Online-Veröffentlichung. Installation, Prüfungen und Einschränkungen sind bei den Kandidaten dokumentiert.
+
+## Auslieferung über bestehende Updater · 19.10.2026
+
+Composition Studio 1.1.0 und AI Notation Studio 0.11.1 (Starter 0.7.27) werden auf ihren vorhandenen main-Updateadressen veröffentlicht. Der gemeinsame Workflow-Kern 1.0.0 liegt in workflow-core. Update und Neustart mit alten und neuen QML-Laufzeiten getestet; kein praktischer SAFE-/Hörtest behauptet. Die Maestro-Installation und das separate neue Maestro-Repository werden in diesem Arbeitsgang nicht verändert.
